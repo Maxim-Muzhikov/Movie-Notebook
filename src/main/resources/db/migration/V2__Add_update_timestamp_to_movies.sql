@@ -1,0 +1,2 @@
+ALTER TABLE movies
+    ADD last_update TIMESTAMP WITHOUT TIME ZONE;
