@@ -1,11 +1,14 @@
 package com.movienotebook.api.util;
 
+import lombok.experimental.UtilityClass;
+
 import java.util.ArrayList;
 import java.util.List;
 
+@UtilityClass
 public class PaginationCalculator {
 	
-	private static final int EXTERNAL_PAGE_SIZE = 20;
+	private final int EXTERNAL_PAGE_SIZE = 20;
 	
 	public record PaginationMapping(
 			List<Integer> externalPagesToFetch,
@@ -13,7 +16,7 @@ public class PaginationCalculator {
 			int relativeEndIndex
 	) {}
 	
-	public static PaginationMapping calculate(int requestedPage, int requestedSize) {
+	public PaginationMapping calculate(int requestedPage, int requestedSize) {
 		if (requestedPage < 1 || requestedSize < 1) {
 			throw new IllegalArgumentException("Страница и размер должны быть больше 0");
 		}
