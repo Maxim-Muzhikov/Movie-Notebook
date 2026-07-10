@@ -4,7 +4,6 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
@@ -40,7 +39,7 @@ public class Movie extends AbstractBase {
 	@Column(name = "average_rating")
 	private BigDecimal averageRating;
 	
-	// Здесь -> @UpdateTimestamp
+	@UpdateTimestamp
 	@Column(name = "last_update")
 	private OffsetDateTime lastUpdate;
 	
