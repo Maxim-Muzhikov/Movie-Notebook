@@ -9,6 +9,7 @@ import com.movienotebook.api.service.MovieService;
 import com.movienotebook.api.service.ReviewService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -27,13 +28,13 @@ public class MovieController {
 	// NOTE @ModelAttribute вместо @RequestBody
 	// LEARN @ModelAttribute
 	@GetMapping("/search")
-	public ResponseEntity<List<MovieResponseDto>> searchMovies(
+	public ResponseEntity<Page<MovieResponseDto>> searchMovies(
 			@Valid @ModelAttribute SearchMovieRequestDto request) {
 		
-		return ResponseEntity.ok(movieService.searchMovie(request)
-				.stream()
-				.map(movieMapper::toDto)
-				.toList());
+		Page<MovieResponseDto> page = movieService.searchMovie(request)
+				.map(movieMapper::toDto);
+		
+		return ResponseEntity.ok(page);
 	}
 	
 	@GetMapping("/{id}/reviews")
