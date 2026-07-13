@@ -2,6 +2,7 @@ package com.movienotebook.api.integration;
 
 import com.movienotebook.api.integration.dto.KinopoiskSearchResponseDto;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
@@ -21,6 +22,7 @@ public class KinopoiskIntegrationService {
 				.build();
 	}
 	
+	@Cacheable(value = "kinopoiskMovies", key = "#query + '-' + #page")
 	public KinopoiskSearchResponseDto searchMovie(String query, Integer page) {
 		return restClient.get()
 				.uri(uriBuilder -> uriBuilder
