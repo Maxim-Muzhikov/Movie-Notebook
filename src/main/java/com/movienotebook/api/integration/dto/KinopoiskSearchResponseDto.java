@@ -8,6 +8,7 @@ import java.util.List;
 public record KinopoiskSearchResponseDto(
 		String keyword,
 		Integer pagesCount,
+		Integer searchFilmsCountResult,
 		List<MovieKinopoiskResponseDto> films
 ) {
 }

@@ -4,8 +4,10 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,8 +36,13 @@ public class Movie extends AbstractBase {
 	@Column(name = "poster_url")
 	private String posterUrl;
 	
+	// TODO Вынести это в отдельную таблицу
 	@Column(name = "average_rating")
 	private BigDecimal averageRating;
+	
+	@UpdateTimestamp
+	@Column(name = "last_update")
+	private OffsetDateTime lastUpdate;
 	
 	@OneToMany(mappedBy = "movie", cascade = CascadeType.ALL, orphanRemoval = true)
 	private List<Review> reviews = new ArrayList<>();

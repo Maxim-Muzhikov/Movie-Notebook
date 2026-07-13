@@ -1,12 +1,15 @@
 package com.movienotebook.api.controller;
 
 import com.movienotebook.api.dto.movie.MovieResponseDto;
+import com.movienotebook.api.dto.movie.SearchMovieRequestDto;
 import com.movienotebook.api.dto.review.ReviewResponseDto;
 import com.movienotebook.api.mapper.MovieMapper;
 import com.movienotebook.api.mapper.ReviewMapper;
 import com.movienotebook.api.service.MovieService;
 import com.movienotebook.api.service.ReviewService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,16 +25,16 @@ public class MovieController {
 	private final MovieMapper movieMapper;
 	private final ReviewMapper reviewMapper;
 	
+	// NOTE @ModelAttribute вместо @RequestBody
+	// LEARN @ModelAttribute
 	@GetMapping("/search")
-	public ResponseEntity<List<MovieResponseDto>> searchMovies(
-			@RequestParam String query,
-			@RequestParam(defaultValue = "1") Integer page,
-			@RequestParam(defaultValue = "false") Boolean deepSearch) {
+	public ResponseEntity<Page<MovieResponseDto>> searchMovies(
+			@Valid @ModelAttribute SearchMovieRequestDto request) {
 		
-		return ResponseEntity.ok(movieService.searchMovie(query, page, deepSearch)
-				.stream()
-				.map(movieMapper::toDto)
-				.toList());
+		Page<MovieResponseDto> page = movieService.searchMovie(request)
+				.map(movieMapper::toDto);
+		
+		return ResponseEntity.ok(page);
 	}
 	
 	@GetMapping("/{id}/reviews")
