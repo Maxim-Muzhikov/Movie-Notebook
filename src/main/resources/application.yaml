@@ -3,6 +3,11 @@ spring:
     import: optional:file:.env
   application:
     name: api
+    cache:
+      type: caffeine
+      cache-names: kinopoiskMovies
+      caffeine:
+        spec: maximumSize=1000,expireAfterWrite=24h
 
   datasource:
     url: jdbc:postgresql://localhost:5432/movie_db
