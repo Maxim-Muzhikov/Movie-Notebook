@@ -36,6 +36,7 @@ public class Movie extends AbstractBase {
 	@Column(name = "poster_url")
 	private String posterUrl;
 	
+	// TODO Вынести это в отдельную таблицу
 	@Column(name = "average_rating")
 	private BigDecimal averageRating;
 	
