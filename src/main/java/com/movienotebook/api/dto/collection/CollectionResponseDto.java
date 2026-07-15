@@ -1,9 +1,8 @@
 package com.movienotebook.api.dto.collection;
 
-import javax.swing.text.StyledEditorKit;
 import java.time.OffsetDateTime;
 
-public record CollectionResponse(
+public record CollectionResponseDto(
 		Long id,
 		String name,
 		String description,

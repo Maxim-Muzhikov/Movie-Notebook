@@ -5,7 +5,7 @@ import com.movienotebook.api.dto.movie.MovieShortResponseDto;
 import java.time.OffsetDateTime;
 import java.util.List;
 
-public record CollectionWithMoviesResponse(
+public record CollectionWithMoviesResponseDto(
 		Long id,
 		String name,
 		String description,

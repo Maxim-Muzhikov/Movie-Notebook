@@ -2,7 +2,7 @@ package com.movienotebook.api.dto.collection;
 
 import jakarta.validation.constraints.NotBlank;
 
-public record CollectionRequest(
+public record CollectionRequestDto(
 		@NotBlank(message = "Имя коллекции не может быть пустым")
 		String name,
 		
@@ -10,7 +10,7 @@ public record CollectionRequest(
 		
 		Boolean isPublic
 ) {
-	public CollectionRequest {
+	public CollectionRequestDto {
 		if (isPublic == null) {
 			isPublic = false;
 		}
