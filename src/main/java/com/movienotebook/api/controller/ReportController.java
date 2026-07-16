@@ -32,7 +32,7 @@ public class ReportController {
 		return ResponseEntity.ok().build();
 	}
 	
-	@GetMapping("/get")
+	@GetMapping
 	public ResponseEntity<List<ReportResponseDto>> getAllReports() {
 		
 		return ResponseEntity.ok(reportService.getAll()
