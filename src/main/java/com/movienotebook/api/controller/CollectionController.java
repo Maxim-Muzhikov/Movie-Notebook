@@ -65,12 +65,12 @@ public class CollectionController {
 		return ResponseEntity.ok().build();
 	}
 	
-	@DeleteMapping("/{collectionsId}/movies/{movieId}")
+	@DeleteMapping("/{collectionId}/movies/{movieId}")
 	public ResponseEntity<Void> removeMovieFromCollection (
-			@PathVariable Long collectionsId,
+			@PathVariable Long collectionId,
 			@PathVariable Long movieId,
 			@AuthenticationPrincipal UserDetails userDetails) {
-		collectionService.removeMovieFromCollection(collectionsId, movieId, userDetails.getUsername());
+		collectionService.removeMovieFromCollection(collectionId, movieId, userDetails.getUsername());
 		return ResponseEntity.ok().build();
 	}
 }
