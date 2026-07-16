@@ -19,4 +19,9 @@ public interface CollectionRepository extends JpaRepository<Collection, Long> {
 	// LEARN @EntityGraph
 	@EntityGraph(attributePaths = {"collectionMovies", "collectionMovies.movie"})
 	Optional<Collection> findById(Long id);
+	
+	@EntityGraph(attributePaths = {"collectionMovies", "collectionMovies.movie"})
+	Optional<Collection> findByNameAndUserId(String name, Long userId);
+	
+	boolean existsByNameAndUserId(String name, Long userId);
 }
