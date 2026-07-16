@@ -34,7 +34,7 @@ public class ReportService {
 			return existingReport.get();
 		} else {
 			Report newReport = new Report();
-			newReport.setUser(reporter);
+			newReport.setReporter(reporter);
 			newReport.setReview(review);
 			newReport.setReason(request.reason());
 			// TODO Создать Status Enum

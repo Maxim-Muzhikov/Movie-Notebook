@@ -11,6 +11,6 @@ public interface ReportMapper {
 	
 	@Mapping(source = "review.content", target = "reviewContent")
 
-	@Mapping(source = "user.username", target = "reporterUsername")
+	@Mapping(source = "reporter.username", target = "reporterUsername")
 	ReportResponseDto toDto(Report report);
 }

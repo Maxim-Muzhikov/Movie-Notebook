@@ -12,7 +12,7 @@ import java.util.Optional;
 
 public interface ReportRepository extends JpaRepository<Report, Long> {
 	
-	@Query("SELECT r FROM Report r WHERE r.review.id = :reviewId AND r.user.id = :reporterId")
+	@Query("SELECT r FROM Report r WHERE r.review.id = :reviewId AND r.reporter.id = :reporterId")
 	Optional<Report> findByReviewAndReporter(
 			@Param("reviewId") Long reviewId,
 			@Param("reporterId") Long reporterId
@@ -31,9 +31,9 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
 	
 	List<Report> findAllByReviewId(Long reviewId);
 	
-	List<Report> findAllByUser(User user);
+	List<Report> findAllByReporter(User user);
 	
-	List<Report> findAllByUserId(Long userId);
+	List<Report> findAllByReporterId(Long userId);
 	
 	List<Report> findAllByReview_User(User targetUser);
 	

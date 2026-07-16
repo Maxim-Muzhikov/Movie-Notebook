@@ -24,5 +24,5 @@ public class Report extends AbstractBase {
 	
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "reporter_id")
-	private User user;
+	private User reporter;
 }

@@ -34,7 +34,7 @@ public class User extends AbstractBase {
 	@OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
 	private List<Rating> ratings = new ArrayList<>();
 	
-	@OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+	@OneToMany(mappedBy = "reporter", cascade = CascadeType.ALL, orphanRemoval = true)
 	private List<Report> reports = new ArrayList<>();
 	
 	@OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
