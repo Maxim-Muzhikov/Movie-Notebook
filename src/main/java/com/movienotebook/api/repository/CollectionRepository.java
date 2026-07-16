@@ -1,7 +1,6 @@
 package com.movienotebook.api.repository;
 
 import com.movienotebook.api.entity.Collection;
-import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
