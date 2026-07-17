@@ -8,6 +8,8 @@ import com.movienotebook.api.entity.Role;
 import com.movienotebook.api.entity.User;
 import com.movienotebook.api.exception.UserAlreadyExistsException;
 import com.movienotebook.api.mapper.UserMapper;
+import com.movienotebook.api.security.CustomUserDetails;
+import com.movienotebook.api.security.CustomUserDetailsService;
 import com.movienotebook.api.security.JwtService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -28,7 +30,7 @@ public class AuthService {
 	
 	// Новые зависимости
 	private final AuthenticationManager authenticationManager;
-	private final UserDetailsService userDetailsService;
+	private final CustomUserDetailsService userDetailsService;
 	private final JwtService jwtService;
 	
 	@Transactional
@@ -55,18 +57,15 @@ public class AuthService {
 	}
 	
 	public LoginResponseDto login(LoginRequestDto request) {
-		// 1. Проверяем логин и пароль (если пароль не совпадет, выкинется ошибка)
+		
 		authenticationManager.authenticate(
 				new UsernamePasswordAuthenticationToken(request.username(), request.password())
 		);
 		
-		// 2. Если мы здесь, значит пароль верный. Загружаем данные пользователя
-		UserDetails userDetails = userDetailsService.loadUserByUsername(request.username());
+		CustomUserDetails userDetails = userDetailsService.loadUserByUsername(request.username());
 		
-		// 3. Генерируем токен
 		String jwtToken = jwtService.generateToken(userDetails);
 		
-		// 4. Возвращаем токен клиенту
 		return new LoginResponseDto(jwtToken);
 	}
 }
