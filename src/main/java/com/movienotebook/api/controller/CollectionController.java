@@ -3,6 +3,7 @@ package com.movienotebook.api.controller;
 import com.movienotebook.api.dto.collection.CollectionRequestDto;
 import com.movienotebook.api.dto.collection.CollectionResponseDto;
 import com.movienotebook.api.dto.collection.CollectionWithMoviesResponseDto;
+import com.movienotebook.api.security.CustomUserDetails;
 import com.movienotebook.api.service.CollectionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -24,35 +25,35 @@ public class CollectionController {
 	@GetMapping("/{collectionId}")
 	public ResponseEntity<CollectionResponseDto> getCollection (
 			@PathVariable Long collectionId,
-			@AuthenticationPrincipal UserDetails userDetails) {
-		return ResponseEntity.ok(collectionService.getById(collectionId, userDetails.getUsername()));
+			@AuthenticationPrincipal CustomUserDetails userDetails) {
+		return ResponseEntity.ok(collectionService.getById(collectionId, userDetails));
 	}
 	
 	@GetMapping("/{collectionId}/movies")
 	public ResponseEntity<CollectionWithMoviesResponseDto> getCollectionWithMovies (
 			@PathVariable Long collectionId,
-			@AuthenticationPrincipal UserDetails userDetails) {
-		return ResponseEntity.ok(collectionService.getWithMoviesById(collectionId, userDetails.getUsername()));
+			@AuthenticationPrincipal CustomUserDetails userDetails) {
+		return ResponseEntity.ok(collectionService.getWithMoviesById(collectionId, userDetails));
 	}
 	
 	@GetMapping
 	public ResponseEntity<List<CollectionResponseDto>> getMyCollections (
-			@AuthenticationPrincipal UserDetails userDetails) {
-		return ResponseEntity.ok(collectionService.getUserCollections(userDetails.getUsername()));
+			@AuthenticationPrincipal CustomUserDetails userDetails) {
+		return ResponseEntity.ok(collectionService.getUserCollections(userDetails));
 	}
 	
 	@PostMapping
 	public ResponseEntity<CollectionResponseDto> createCollection (
 			@Valid @RequestBody CollectionRequestDto request,
-			@AuthenticationPrincipal UserDetails userDetails) {
-		return ResponseEntity.status(HttpStatus.CREATED).body(collectionService.createCollection(request, userDetails.getUsername()));
+			@AuthenticationPrincipal CustomUserDetails userDetails) {
+		return ResponseEntity.status(HttpStatus.CREATED).body(collectionService.createCollection(request, userDetails));
 	}
 	
 	@DeleteMapping("/{collectionId}")
 	public ResponseEntity<Void> deleteCollection (
 			@PathVariable Long collectionId,
-			@AuthenticationPrincipal UserDetails userDetails) {
-		collectionService.deleteCollection(collectionId, userDetails.getUsername());
+			@AuthenticationPrincipal CustomUserDetails userDetails) {
+		collectionService.deleteCollection(collectionId, userDetails);
 		return ResponseEntity.ok().build();
 	}
 
@@ -60,8 +61,8 @@ public class CollectionController {
 	public ResponseEntity<Void> addMovieToCollection (
 			@PathVariable Long collectionId,
 			@PathVariable Long movieId,
-			@AuthenticationPrincipal UserDetails userDetails) {
-		collectionService.addMovieToTheCollection(collectionId, movieId, userDetails.getUsername());
+			@AuthenticationPrincipal CustomUserDetails userDetails) {
+		collectionService.addMovieToTheCollection(collectionId, movieId, userDetails);
 		return ResponseEntity.ok().build();
 	}
 	
@@ -69,8 +70,8 @@ public class CollectionController {
 	public ResponseEntity<Void> removeMovieFromCollection (
 			@PathVariable Long collectionId,
 			@PathVariable Long movieId,
-			@AuthenticationPrincipal UserDetails userDetails) {
-		collectionService.removeMovieFromCollection(collectionId, movieId, userDetails.getUsername());
+			@AuthenticationPrincipal CustomUserDetails userDetails) {
+		collectionService.removeMovieFromCollection(collectionId, movieId, userDetails);
 		return ResponseEntity.ok().build();
 	}
 }
