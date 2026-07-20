@@ -104,7 +104,7 @@ public class CollectionService {
 		}
 		
 		User user = userService.getById(currentUser.getId());
-			Collection newCollection = mapToCollectionEntity(request, user);
+		Collection newCollection = mapToCollectionEntity(request, user);
 		return collectionMapper.toDto(collectionRepository.save(newCollection));
 	}
 	
