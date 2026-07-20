@@ -7,6 +7,7 @@ import com.movienotebook.api.entity.Role;
 import com.movienotebook.api.entity.User;
 import com.movienotebook.api.exception.ResourceNotFoundException;
 import com.movienotebook.api.repository.ReviewRepository;
+import com.movienotebook.api.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,18 +25,18 @@ public class ReviewService {
 	
 	// TODO Проверить нет ли ошибок при добавлении отзыва, если один отзыв от пользователя уже был удален
 	@Transactional
-	public Review addOrUpdateReview(ReviewRequestDto request, String currentUser) {
+	public Review addOrUpdateReview(ReviewRequestDto request, CustomUserDetails currentUser) {
 		
 		Movie movie = movieService.getById(request.movieId());
-		User user = userService.getByUsername(currentUser);
 		
-		Optional<Review> existingReview = reviewRepository.findByMovieIdAndUserId(movie.getId(), user.getId());
+		Optional<Review> existingReview = reviewRepository.findByMovieIdAndUserId(movie.getId(), currentUser.getId());
 		
 		if (existingReview.isPresent()) {
 			existingReview.get().setContent(request.content());
 			reviewRepository.save(existingReview.get());
 			return existingReview.get();
 		} else {
+			User user = userService.getReferenceById(currentUser.getId());
 			Review newReview = new Review();
 			newReview.setMovie(movie);
 			newReview.setUser(user);
@@ -50,23 +51,20 @@ public class ReviewService {
 	}
 	
 	@Transactional
-	public void deleteReview(Long id, String username) {
+	public void deleteReview(Long id, CustomUserDetails currentUser) {
 	
 		Review review = reviewRepository.findById(id)
 				.orElseThrow(() -> new ResourceNotFoundException("Отзыв с идентификатором " + id + "не найден"));
 		
 		User author = review.getUser();
 		
-		User currentUser = userService.getByUsername(username);
+		// TODO Добавить в CustomUserDetails поле с ролью
+		User user = userService.getById(currentUser.getId());
 		
-		if (author.getUsername().equals(username) || currentUser.getRole() == Role.ROLE_ADMIN) {
-		
+		if (author.getId().equals(currentUser.getId()) || user.getRole() == Role.ROLE_ADMIN) {
 			reviewRepository.delete(review);
-			
 		} else {
-		
 			throw new org.springframework.security.access.AccessDeniedException("У вас нет прав на удаление этого отзыва");
-			
 		}
 	
 	}
