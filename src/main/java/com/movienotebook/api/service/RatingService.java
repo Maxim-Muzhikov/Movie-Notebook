@@ -5,6 +5,7 @@ import com.movienotebook.api.entity.Movie;
 import com.movienotebook.api.entity.Rating;
 import com.movienotebook.api.entity.User;
 import com.movienotebook.api.repository.RatingRepository;
+import com.movienotebook.api.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,10 +20,12 @@ public class RatingService {
 	
 	private final RatingRepository ratingRepository;
 	private final MovieService movieService;
+	private final UserService userService;
 	
 	// TODO: Внедрить инкрементальное среднее
+	// NOTE Т.к. использовали .getReferenceById(), теперь мы доверяем CustomUserDetails всем сердцем
 	@Transactional
-	public BigDecimal addOrUpdateRating(RatingRequestDto request, User currentUser) {
+	public BigDecimal addOrUpdateRating(RatingRequestDto request, CustomUserDetails currentUser) {
 		
 		Movie movie = movieService.getById(request.movieId());
 		
@@ -32,9 +35,10 @@ public class RatingService {
 			existingRating.get().setScore(request.score());
 			ratingRepository.save(existingRating.get());
 		} else {
+			User user = userService.getReferenceById(currentUser.getId());
 			Rating newRating = new Rating();
 			newRating.setMovie(movie);
-			newRating.setUser(currentUser);
+			newRating.setUser(user);
 			newRating.setScore(request.score());
 			ratingRepository.save(newRating);
 		}
