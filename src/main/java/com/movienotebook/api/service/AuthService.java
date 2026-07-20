@@ -14,8 +14,6 @@ import com.movienotebook.api.security.JwtService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,15 +25,13 @@ public class AuthService {
 	private final UserService userService;
 	private final PasswordEncoder passwordEncoder;
 	private final UserMapper userMapper;
-	
-	// Новые зависимости
 	private final AuthenticationManager authenticationManager;
 	private final CustomUserDetailsService userDetailsService;
 	private final JwtService jwtService;
 	
 	@Transactional
 	public UserResponseDto register(RegisterRequestDto request) {
-		// ... (твой код регистрации остается без изменений) ...
+		
 		if (userService.existsByUsername(request.username())) {
 			throw new UserAlreadyExistsException("Пользователь с таким именем уже существует");
 		}
