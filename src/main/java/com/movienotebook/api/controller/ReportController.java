@@ -4,12 +4,12 @@ import com.movienotebook.api.dto.report.ReportRequestDto;
 import com.movienotebook.api.dto.report.ReportResponseDto;
 import com.movienotebook.api.dto.report.ResolveReportRequestDto;
 import com.movienotebook.api.mapper.ReportMapper;
+import com.movienotebook.api.security.CustomUserDetails;
 import com.movienotebook.api.service.ReportService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -25,9 +25,9 @@ public class ReportController {
 	@PostMapping()
 	public ResponseEntity<Void> reporting(
 			@Valid @RequestBody ReportRequestDto request,
-			@AuthenticationPrincipal UserDetails userDetails) {
+			@AuthenticationPrincipal CustomUserDetails userDetails) {
 		
-		reportService.addOrUpdatedReport(request, userDetails.getUsername());
+		reportService.addOrUpdatedReport(request, userDetails);
 		
 		return ResponseEntity.ok().build();
 	}
@@ -45,9 +45,9 @@ public class ReportController {
 	public ResponseEntity<Void> resolveReport(
 			@PathVariable Long id,
 			@RequestBody ResolveReportRequestDto request,
-			@AuthenticationPrincipal UserDetails userDetails) {
+			@AuthenticationPrincipal CustomUserDetails userDetails) {
 		
-		reportService.resolve(id, request.action(), userDetails.getUsername());
+		reportService.resolve(id, request.action(), userDetails);
 		
 		return ResponseEntity.ok().build();
 	}

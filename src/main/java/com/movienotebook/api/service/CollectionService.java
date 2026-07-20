@@ -13,6 +13,7 @@ import com.movienotebook.api.exception.ResourceNotFoundException;
 import com.movienotebook.api.mapper.CollectionMapper;
 import com.movienotebook.api.repository.CollectionMovieRepository;
 import com.movienotebook.api.repository.CollectionRepository;
+import com.movienotebook.api.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -35,18 +36,17 @@ public class CollectionService {
 	private final CollectionMovieRepository collectionMovieRepository;
 	private final CollectionMapper collectionMapper;
 	
-	private Collection securedGetCollection(Long collectionId, String currentUser) {
-		User user = userService.getByUsername(currentUser);
+	private Collection securedGetCollection(Long collectionId, CustomUserDetails currentUser) {
 		
 		Collection collection = collectionRepository.findById(collectionId)
 				.orElseThrow(() -> new ResourceNotFoundException("Коллекции с номером " + collectionId + " не найдено"));
 		
 		User authorOfCollection = collection.getUser();
 		
-		boolean accessGranted = Objects.equals(user.getId(), authorOfCollection.getId());
+		boolean accessGranted = Objects.equals(currentUser.getId(), authorOfCollection.getId());
 		
 		if (!accessGranted) {
-			throw new AccessDeniedException("Пользователь  " + user.getUsername() + " не имеет права изменять коллекции пользователя " + authorOfCollection.getUsername());
+			throw new AccessDeniedException("Пользователь  " + currentUser.getUsername() + " не имеет права изменять коллекции пользователя " + authorOfCollection.getUsername());
 		}
 		return collection;
 	}
@@ -73,54 +73,50 @@ public class CollectionService {
 	}
 	
 	@Transactional(readOnly = true)
-	public CollectionResponseDto getById(Long collectionId, String currentUser) {
+	public CollectionResponseDto getById(Long collectionId, CustomUserDetails currentUser) {
 		Collection collection = securedGetCollection(collectionId, currentUser);
 		return collectionMapper.toDto(collection);
 	}
 	
 	@Transactional(readOnly = true)
-	public CollectionWithMoviesResponseDto getWithMoviesById(Long collectionId, String currentUser) {
+	public CollectionWithMoviesResponseDto getWithMoviesById(Long collectionId, CustomUserDetails currentUser) {
 		Collection collection = securedGetCollection(collectionId, currentUser);
 		return collectionMapper.toWithMoviesDto(collection);
 	}
 	
 	@Transactional(readOnly = true)
-	public List<CollectionResponseDto> getUserCollections(String currentUser) {
-		
-		// TODO Вынести поле id в пользовательский UserService
-		// TODO Или настроить контекст безопасности и брать напрямую оттуда id
-		Long userId = userService.getByUsername(currentUser).getId();
+	public List<CollectionResponseDto> getUserCollections(CustomUserDetails currentUser) {
 		
 		// TODO Сделать возврат только ПУБЛИЧНЫХ коллекций без проверки на доступ
-		return collectionRepository.findAllByUserId(userId)
+		return collectionRepository.findAllByUserId(currentUser.getId())
 				.stream()
 				.map(collectionMapper::toDto)
 				.toList();
 	}
 	
 	@Transactional
-	public CollectionResponseDto createCollection(CollectionRequestDto request, String currentUser) {
+	public CollectionResponseDto createCollection(CollectionRequestDto request, CustomUserDetails currentUser) {
 		
-		User user = userService.getByUsername(currentUser);
-		boolean isExist = collectionRepository.existsByNameAndUserId(request.name(), user.getId());
+		boolean isExist = collectionRepository.existsByNameAndUserId(request.name(), currentUser.getId());
 		
 		if (isExist) {
 			throw new CollectionAlreadyExistsException("Коллекция с таким именем уже существует");
 		}
 		
+		User user = userService.getById(currentUser.getId());
 		Collection newCollection = mapToCollectionEntity(request, user);
 		return collectionMapper.toDto(collectionRepository.save(newCollection));
 	}
 	
 	@Transactional
-	public void deleteCollection(Long collectionId, String currentUser) {
+	public void deleteCollection(Long collectionId, CustomUserDetails currentUser) {
 		
 		Collection collection = securedGetCollection(collectionId, currentUser);
 		collectionRepository.delete(collection);
 	}
 	
 	@Transactional
-	public void addMovieToTheCollection(Long collectionId, Long movieId, String currentUser) {
+	public void addMovieToTheCollection(Long collectionId, Long movieId, CustomUserDetails currentUser) {
 		
 		Collection collection = securedGetCollection(collectionId, currentUser);
 		Movie movie = movieService.getById(movieId);
@@ -135,7 +131,7 @@ public class CollectionService {
 	}
 	
 	@Transactional
-	public void removeMovieFromCollection(Long collectionId, Long movieId, String currentUser) {
+	public void removeMovieFromCollection(Long collectionId, Long movieId, CustomUserDetails currentUser) {
 		
 		Collection collection = securedGetCollection(collectionId, currentUser);
 		

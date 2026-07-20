@@ -26,8 +26,17 @@ public class UserService {
 		return userRepository.existsByEmail(email);
 	}
 	
+	public User getById(Long id) {
+		return userRepository.findById(id)
+				.orElseThrow(() -> new ResourceNotFoundException("Пользователь с номером " + id + " не найден"));
+	}
+	
 	@Transactional
 	public User save(User user) {
 		return userRepository.save(user);
+	}
+	
+	public User getReferenceById(Long id) {
+		return userRepository.getReferenceById(id);
 	}
 }

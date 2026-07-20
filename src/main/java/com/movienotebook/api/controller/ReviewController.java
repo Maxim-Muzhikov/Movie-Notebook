@@ -4,13 +4,13 @@ import com.movienotebook.api.dto.review.ReviewRequestDto;
 import com.movienotebook.api.dto.review.ReviewResponseDto;
 import com.movienotebook.api.entity.User;
 import com.movienotebook.api.mapper.ReviewMapper;
+import com.movienotebook.api.security.CustomUserDetails;
 import com.movienotebook.api.service.ReviewService;
 import com.movienotebook.api.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -25,9 +25,9 @@ public class ReviewController {
 	@PostMapping
 	public ResponseEntity<ReviewResponseDto> reviewMovie(
 			@Valid @RequestBody ReviewRequestDto request,
-			@AuthenticationPrincipal UserDetails userDetails) {
+			@AuthenticationPrincipal CustomUserDetails userDetails) {
 		
-		ReviewResponseDto reviewResponseDto = mapper.toDto(reviewService.addOrUpdateReview(request, userDetails.getUsername()));
+		ReviewResponseDto reviewResponseDto = mapper.toDto(reviewService.addOrUpdateReview(request, userDetails));
 		
 		return ResponseEntity.ok(reviewResponseDto);
 		
@@ -36,9 +36,9 @@ public class ReviewController {
 	@DeleteMapping("/{id}")
 	public ResponseEntity<Void> deleteReview (
 			@PathVariable Long id,
-			@AuthenticationPrincipal UserDetails userDetails) {
+			@AuthenticationPrincipal CustomUserDetails userDetails) {
 		
-		reviewService.deleteReview(id, userDetails.getUsername());
+		reviewService.deleteReview(id, userDetails);
 		
 		return ResponseEntity.ok().build();
 	}

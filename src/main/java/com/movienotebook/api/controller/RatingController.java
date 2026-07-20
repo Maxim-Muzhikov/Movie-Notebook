@@ -3,6 +3,7 @@ package com.movienotebook.api.controller;
 import com.movienotebook.api.dto.rating.RatingRequestDto;
 import com.movienotebook.api.dto.rating.RatingResponseDto;
 import com.movienotebook.api.entity.User;
+import com.movienotebook.api.security.CustomUserDetails;
 import com.movienotebook.api.service.RatingService;
 import com.movienotebook.api.service.UserService;
 import jakarta.validation.Valid;
@@ -25,11 +26,9 @@ public class RatingController {
 	@PutMapping
 	public ResponseEntity<RatingResponseDto> rateMovie(
 			@Valid @RequestBody RatingRequestDto request,
-			@AuthenticationPrincipal UserDetails userDetails) {
+			@AuthenticationPrincipal CustomUserDetails userDetails) {
 		
-		User user = userService.getByUsername(userDetails.getUsername());
-		
-		BigDecimal newAvg = ratingService.addOrUpdateRating(request, user);
+		BigDecimal newAvg = ratingService.addOrUpdateRating(request, userDetails);
 		
 		return ResponseEntity.ok(new RatingResponseDto(newAvg));
 	}
