@@ -9,6 +9,7 @@ import com.movienotebook.api.exception.ResourceNotFoundException;
 import com.movienotebook.api.repository.ReviewRepository;
 import com.movienotebook.api.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -58,10 +59,7 @@ public class ReviewService {
 		
 		User author = review.getUser();
 		
-		// TODO Добавить в CustomUserDetails поле с ролью
-		User user = userService.getById(currentUser.getId());
-		
-		if (author.getId().equals(currentUser.getId()) || user.getRole() == Role.ROLE_ADMIN) {
+		if (author.getId().equals(currentUser.getId()) || currentUser.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_ADMIN"))) {
 			reviewRepository.delete(review);
 		} else {
 			throw new org.springframework.security.access.AccessDeniedException("У вас нет прав на удаление этого отзыва");
