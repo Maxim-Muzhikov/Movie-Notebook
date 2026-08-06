@@ -46,6 +46,15 @@ public class ClassesExamples {
 		return user;
 	}
 	
+	public User getUserToSave() {
+		User user = new User();
+		user.setUsername("Имя пользователя");
+		user.setPasswordHash("Хэш пароля");
+		user.setRole(Role.ROLE_USER);
+		user.setEmail("email@mail.ru");
+		return user;
+	}
+	
 	public Review getExistingReview() {
 		Review review = new Review();
 		review.setId(1L);
