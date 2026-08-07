@@ -10,13 +10,13 @@ public class PaginationCalculator {
 	
 	private final int EXTERNAL_PAGE_SIZE = 20;
 	
-	public record PaginationMapping(
+	public record KinopoiskPaginationMapping(
 			List<Integer> externalPagesToFetch,
 			int relativeStartIndex,
 			int relativeEndIndex
 	) {}
 	
-	public PaginationMapping calculate(int requestedPage, int requestedSize) {
+	public KinopoiskPaginationMapping calculate(int requestedPage, int requestedSize) {
 		if (requestedPage < 1 || requestedSize < 1) {
 			throw new IllegalArgumentException("Страница и размер должны быть больше 0");
 		}
@@ -36,6 +36,6 @@ public class PaginationCalculator {
 		int relativeStartIndex = absoluteStartIndex - firstFetchedItemAbsoluteIndex;
 		int relativeEndIndex = relativeStartIndex + requestedSize;
 		
-		return new PaginationMapping(pagesToFetch, relativeStartIndex, relativeEndIndex);
+		return new KinopoiskPaginationMapping(pagesToFetch, relativeStartIndex, relativeEndIndex);
 	}
 }
