@@ -9,6 +9,6 @@ public record KinopoiskSearchResponseDto(
 		String keyword,
 		Integer pagesCount,
 		Integer searchFilmsCountResult,
-		List<MovieKinopoiskResponseDto> films
+		List<KinopoiskResponseDto> films
 ) {
 }

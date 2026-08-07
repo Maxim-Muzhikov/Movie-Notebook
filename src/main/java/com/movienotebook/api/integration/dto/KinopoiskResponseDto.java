@@ -3,7 +3,7 @@ package com.movienotebook.api.integration.dto;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record MovieKinopoiskResponseDto(
+public record KinopoiskResponseDto(
 		Long filmId,
 		String nameRu,
 		String nameEn,
