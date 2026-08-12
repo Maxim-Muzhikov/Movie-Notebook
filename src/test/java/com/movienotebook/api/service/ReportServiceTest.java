@@ -57,8 +57,8 @@ class ReportServiceTest {
 	void setUp() {
 		currentUser = new CustomUserDetails(
 				1L,
-				"reporterUser",
-				"hash",
+				"Имя пользователя",
+				"Хэш пароля",
 				List.of(new SimpleGrantedAuthority("ROLE_USER"))
 		);
 		
@@ -193,6 +193,9 @@ class ReportServiceTest {
 			// Arrange
 			Long reportId = testReport.getId();
 			Long reviewId = testReview.getId();
+			
+			testReport.setReview(testReview);
+			expectedReport.setReview(ClassesExamples.getExistingReview());
 			
 			when(reportRepository.findById(reportId)).thenReturn(Optional.of(testReport));
 			
