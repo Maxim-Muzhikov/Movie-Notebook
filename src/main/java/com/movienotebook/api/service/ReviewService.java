@@ -3,7 +3,6 @@ package com.movienotebook.api.service;
 import com.movienotebook.api.dto.review.ReviewRequestDto;
 import com.movienotebook.api.entity.Movie;
 import com.movienotebook.api.entity.Review;
-import com.movienotebook.api.entity.Role;
 import com.movienotebook.api.entity.User;
 import com.movienotebook.api.exception.ResourceNotFoundException;
 import com.movienotebook.api.repository.ReviewRepository;
@@ -52,10 +51,10 @@ public class ReviewService {
 	}
 	
 	@Transactional
-	public void deleteReview(Long id, CustomUserDetails currentUser) {
+	public void deleteReview(Long reviewId, CustomUserDetails currentUser) {
 	
-		Review review = reviewRepository.findById(id)
-				.orElseThrow(() -> new ResourceNotFoundException("Отзыв с идентификатором " + id + "не найден"));
+		Review review = reviewRepository.findById(reviewId)
+				.orElseThrow(() -> new ResourceNotFoundException("Отзыв с идентификатором " + reviewId + "не найден"));
 		
 		User author = review.getUser();
 		
