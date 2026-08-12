@@ -1,9 +1,6 @@
 package com.movienotebook.api.util;
 
-import com.movienotebook.api.entity.Movie;
-import com.movienotebook.api.entity.Review;
-import com.movienotebook.api.entity.Role;
-import com.movienotebook.api.entity.User;
+import com.movienotebook.api.entity.*;
 import lombok.experimental.UtilityClass;
 
 import java.math.BigDecimal;
@@ -14,6 +11,24 @@ import java.util.ArrayList;
 public class ClassesExamples {
 	
 	private static final OffsetDateTime currentTime = OffsetDateTime.now();
+	
+	public Report getExistingReport() {
+		Report report = new Report();
+		report.setId(1L);
+		report.setReason("Жалоба на плохой отзыв");
+		report.setStatus("NEW");
+		report.setReview(new Review());
+		report.setReporter(new User());
+		report.setCreatedAt(currentTime.minusDays(1));
+		return report;
+	}
+	
+	public Report getReportToSave() {
+		Report report = new Report();
+		report.setReason("Жалоба на плохой отзыв");
+		report.setStatus("NEW");
+		return report;
+	}
 	
 	public Movie getExistingMovie() {
 		Movie movie = new Movie();
