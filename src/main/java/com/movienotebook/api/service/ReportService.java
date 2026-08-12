@@ -50,10 +50,10 @@ public class ReportService {
 	}
 	
 	@Transactional
-	public void resolve(Long id, String action, CustomUserDetails currentUser) {
+	public void resolve(Long reportId, String action, CustomUserDetails currentUser) {
 		
-		Report report = reportRepository.findById(id)
-				.orElseThrow(() -> new ResourceNotFoundException("Жалоба с номером " + id + " не найдена"));
+		Report report = reportRepository.findById(reportId)
+				.orElseThrow(() -> new ResourceNotFoundException("Жалоба с номером " + reportId + " не найдена"));
 		
 		if ("DELETE_REVIEW".equals(action)) {
 			reportRepository.delete(report);
