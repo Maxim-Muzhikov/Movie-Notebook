@@ -4,7 +4,6 @@ import com.movienotebook.api.entity.Movie;
 import com.movienotebook.api.mapper.MovieMapper;
 import com.movienotebook.api.repository.MovieRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -30,7 +29,6 @@ public class MovieSyncService {
 				.map(Movie::getExternalId)
 				.toList();
 		
-		// LEARN .stream().collect(...toMap())
 		Map<Long, Movie> existingMoviesMap = movieRepository.findAllByExternalIdIn(externalIds)
 				.stream()
 				.collect(Collectors.toMap(Movie::getExternalId, m -> m));
