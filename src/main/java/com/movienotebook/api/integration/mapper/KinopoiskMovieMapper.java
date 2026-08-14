@@ -15,6 +15,7 @@ public interface KinopoiskMovieMapper {
 	@Mapping(target = "title", expression = "java(resolveTitle(dto.nameRu(), dto.nameEn()))")
 	@Mapping(target = "id", ignore = true)
 	@Mapping(target = "averageRating", ignore = true)
+	@Mapping(target = "createdAt", ignore = true)
 	@Mapping(target = "lastUpdate", ignore = true)
 	@Mapping(target = "reviews", ignore = true)
 	@Mapping(target = "ratings", ignore = true)
