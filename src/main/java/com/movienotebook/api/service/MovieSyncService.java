@@ -23,7 +23,7 @@ public class MovieSyncService {
 	//@Value("${app.movies.stale-threshold}")
 	private final Duration movieStaleThreshold = Duration.ofHours(24);
 	
-	public List<Movie> syncAndSave(List<Movie> fetchedMovies) {
+	List<Movie> syncAndSave(List<Movie> fetchedMovies) {
 		List<Long> externalIds = fetchedMovies
 				.stream()
 				.map(Movie::getExternalId)
