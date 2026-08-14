@@ -10,7 +10,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -39,21 +38,21 @@ public class CollectionController {
 	@GetMapping
 	public ResponseEntity<List<CollectionResponseDto>> getMyCollections (
 			@AuthenticationPrincipal CustomUserDetails userDetails) {
-		return ResponseEntity.ok(collectionService.getUserCollections(userDetails));
+		return ResponseEntity.ok(collectionService.getByCurrentUser(userDetails));
 	}
 	
 	@PostMapping
 	public ResponseEntity<CollectionResponseDto> createCollection (
 			@Valid @RequestBody CollectionRequestDto request,
 			@AuthenticationPrincipal CustomUserDetails userDetails) {
-		return ResponseEntity.status(HttpStatus.CREATED).body(collectionService.createCollection(request, userDetails));
+		return ResponseEntity.status(HttpStatus.CREATED).body(collectionService.create(request, userDetails));
 	}
 	
 	@DeleteMapping("/{collectionId}")
 	public ResponseEntity<Void> deleteCollection (
 			@PathVariable Long collectionId,
 			@AuthenticationPrincipal CustomUserDetails userDetails) {
-		collectionService.deleteCollection(collectionId, userDetails);
+		collectionService.delete(collectionId, userDetails);
 		return ResponseEntity.ok().build();
 	}
 
@@ -62,7 +61,7 @@ public class CollectionController {
 			@PathVariable Long collectionId,
 			@PathVariable Long movieId,
 			@AuthenticationPrincipal CustomUserDetails userDetails) {
-		collectionService.addMovieToTheCollection(collectionId, movieId, userDetails);
+		collectionService.addMovie(collectionId, movieId, userDetails);
 		return ResponseEntity.ok().build();
 	}
 	
@@ -71,7 +70,7 @@ public class CollectionController {
 			@PathVariable Long collectionId,
 			@PathVariable Long movieId,
 			@AuthenticationPrincipal CustomUserDetails userDetails) {
-		collectionService.removeMovieFromCollection(collectionId, movieId, userDetails);
+		collectionService.removeMovie(collectionId, movieId, userDetails);
 		return ResponseEntity.ok().build();
 	}
 }
