@@ -3,7 +3,6 @@ package com.movienotebook.api.controller;
 import com.movienotebook.api.dto.movie.MovieResponseDto;
 import com.movienotebook.api.dto.movie.SearchMovieRequestDto;
 import com.movienotebook.api.dto.review.ReviewResponseDto;
-import com.movienotebook.api.mapper.MovieMapper;
 import com.movienotebook.api.mapper.ReviewMapper;
 import com.movienotebook.api.service.MovieService;
 import com.movienotebook.api.service.ReviewService;
@@ -22,19 +21,13 @@ public class MovieController {
 	
 	private final MovieService movieService;
 	private final ReviewService reviewService;
-	private final MovieMapper movieMapper;
 	private final ReviewMapper reviewMapper;
 	
-	// NOTE @ModelAttribute вместо @RequestBody
-	// LEARN @ModelAttribute
 	@GetMapping("/search")
 	public ResponseEntity<Page<MovieResponseDto>> searchMovies(
 			@Valid @ModelAttribute SearchMovieRequestDto request) {
-		
-		Page<MovieResponseDto> page = movieService.searchMovie(request)
-				.map(movieMapper::toDto);
-		
-		return ResponseEntity.ok(page);
+			
+		return ResponseEntity.ok(movieService.searchMovies(request));
 	}
 	
 	@GetMapping("/{id}/reviews")
@@ -51,7 +44,7 @@ public class MovieController {
 	public ResponseEntity<MovieResponseDto> getMovie(
 			@PathVariable Long id) {
 		
-		return ResponseEntity.ok(movieMapper.toDto(movieService.getById(id)));
+		return ResponseEntity.ok(movieService.getById(id));
 	}
 }
 

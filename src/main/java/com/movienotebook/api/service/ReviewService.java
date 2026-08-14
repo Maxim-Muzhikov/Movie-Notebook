@@ -27,7 +27,7 @@ public class ReviewService {
 	@Transactional
 	public Review addOrUpdateReview(ReviewRequestDto request, CustomUserDetails currentUser) {
 		
-		Movie movie = movieService.getById(request.movieId());
+		Movie movie = movieService.getEntityById(request.movieId());
 		
 		Optional<Review> existingReview = reviewRepository.findByMovieIdAndUserId(movie.getId(), currentUser.getId());
 		

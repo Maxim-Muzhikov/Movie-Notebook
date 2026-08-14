@@ -19,7 +19,8 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
+import java.util.List;
+import java.util.Objects;
 
 // TODO Повесить на все сервисы @Transactional
 // NOTE Маппинг перенесен в сервис для добавления @Transactional
@@ -119,7 +120,7 @@ public class CollectionService {
 	public void addMovieToTheCollection(Long collectionId, Long movieId, CustomUserDetails currentUser) {
 		
 		Collection collection = securedGetCollection(collectionId, currentUser);
-		Movie movie = movieService.getById(movieId);
+		Movie movie = movieService.getEntityById(movieId);
 		
 		boolean alreadyExists = collectionMovieRepository.existsByCollectionIdAndMovieId(collectionId, movieId);
 		if (alreadyExists) {

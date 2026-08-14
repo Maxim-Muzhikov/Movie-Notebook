@@ -27,7 +27,7 @@ public class RatingService {
 	@Transactional
 	public BigDecimal addOrUpdateRating(RatingRequestDto request, CustomUserDetails currentUser) {
 		
-		Movie movie = movieService.getById(request.movieId());
+		Movie movie = movieService.getEntityById(request.movieId());
 		
 		Optional<Rating> existingRating = ratingRepository.findByMovieIdAndUserId(movie.getId(), currentUser.getId());
 		
