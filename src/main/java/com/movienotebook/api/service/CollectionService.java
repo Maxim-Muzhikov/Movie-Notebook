@@ -103,7 +103,7 @@ public class CollectionService {
 			throw new CollectionAlreadyExistsException("Коллекция с таким именем уже существует");
 		}
 		
-		User user = userService.getById(currentUser.getId());
+		User user = userService.getEntityById(currentUser.getId());
 		Collection newCollection = mapToCollectionEntity(request, user);
 		return collectionMapper.toDto(collectionRepository.save(newCollection));
 	}

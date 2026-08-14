@@ -59,7 +59,7 @@ public class ReviewService {
 		User author = review.getUser();
 		
 		// TODO Добавить в CustomUserDetails поле с ролью
-		User user = userService.getById(currentUser.getId());
+		User user = userService.getEntityById(currentUser.getId());
 		
 		if (author.getId().equals(currentUser.getId()) || user.getRole() == Role.ROLE_ADMIN) {
 			reviewRepository.delete(review);
