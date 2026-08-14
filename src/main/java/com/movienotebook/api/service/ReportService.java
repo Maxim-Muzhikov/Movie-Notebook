@@ -25,7 +25,7 @@ public class ReportService {
 	@Transactional
 	public Report addOrUpdatedReport(ReportRequestDto request, CustomUserDetails currentUser) {
 		
-		Review review = reviewService.getReviewById(request.reviewId());
+		Review review = reviewService.getEntityById(request.reviewId());
 		
 		Optional<Report> existingReport = reportRepository.findByReviewAndReporter(request.reviewId(), currentUser.getId());
 		
@@ -57,7 +57,7 @@ public class ReportService {
 		
 		if ("DELETE_REVIEW".equals(action)) {
 			reportRepository.delete(report);
-			reviewService.deleteReview(report.getReview().getId(), currentUser);
+			reviewService.delete(report.getReview().getId(), currentUser);
 		} else if ("REJECT_REPORT".equals(action)) {
 			reportRepository.delete(report);
 		}

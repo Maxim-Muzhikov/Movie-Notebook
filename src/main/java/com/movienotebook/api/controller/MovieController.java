@@ -3,7 +3,6 @@ package com.movienotebook.api.controller;
 import com.movienotebook.api.dto.movie.MovieResponseDto;
 import com.movienotebook.api.dto.movie.SearchMovieRequestDto;
 import com.movienotebook.api.dto.review.ReviewResponseDto;
-import com.movienotebook.api.mapper.ReviewMapper;
 import com.movienotebook.api.service.MovieService;
 import com.movienotebook.api.service.ReviewService;
 import jakarta.validation.Valid;
@@ -21,7 +20,6 @@ public class MovieController {
 	
 	private final MovieService movieService;
 	private final ReviewService reviewService;
-	private final ReviewMapper reviewMapper;
 	
 	@GetMapping("/search")
 	public ResponseEntity<Page<MovieResponseDto>> searchMovies(
@@ -34,10 +32,7 @@ public class MovieController {
 	public ResponseEntity<List<ReviewResponseDto>> getReviews(
 			@PathVariable Long id) {
 		
-		return ResponseEntity.ok(reviewService.getReviewsByMovieId(id)
-				.stream()
-				.map(reviewMapper::toDto)
-				.toList());
+		return ResponseEntity.ok(reviewService.findAllByMovieId(id));
 	}
 	
 	@GetMapping("/{id}")
