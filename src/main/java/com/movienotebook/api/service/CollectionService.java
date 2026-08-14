@@ -19,11 +19,9 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
+import java.util.List;
+import java.util.Objects;
 
-// TODO Повесить на все сервисы @Transactional
-// NOTE Маппинг перенесен в сервис для добавления @Transactional
-// LEARN @Transactional
 @Service
 
 // NOTE @RequiredArgsConstructor вместо @AllArgsConstructor, чтобы избежать ошибок компиляции при добавлении не-final поля
@@ -35,6 +33,83 @@ public class CollectionService {
 	private final CollectionRepository collectionRepository;
 	private final CollectionMovieRepository collectionMovieRepository;
 	private final CollectionMapper collectionMapper;
+	
+	@Transactional(readOnly = true)
+	public CollectionResponseDto getById(Long collectionId, CustomUserDetails currentUser) {
+		Collection collection = securedGetCollection(collectionId, currentUser);
+		return collectionMapper.toDto(collection);
+	}
+	
+	@Transactional(readOnly = true)
+	public CollectionWithMoviesResponseDto getWithMoviesById(Long collectionId, CustomUserDetails currentUser) {
+		Collection collection = securedGetCollection(collectionId, currentUser);
+		return collectionMapper.toWithMoviesDto(collection);
+	}
+	
+	@Transactional(readOnly = true)
+	public List<CollectionResponseDto> getByCurrentUser(CustomUserDetails currentUser) {
+		return collectionRepository.findAllByUserId(currentUser.getId())
+				.stream()
+				.map(collectionMapper::toDto)
+				.toList();
+	}
+	
+	@Transactional
+	public CollectionResponseDto create(CollectionRequestDto request, CustomUserDetails currentUser) {
+		
+		boolean isExist = collectionRepository.existsByNameAndUserId(request.name(), currentUser.getId());
+		
+		if (isExist) {
+			throw new CollectionAlreadyExistsException("Коллекция с таким именем уже существует");
+		}
+		
+		User user = userService.getEntityById(currentUser.getId());
+		Collection newCollection = mapToCollectionEntity(request, user);
+		return collectionMapper.toDto(collectionRepository.save(newCollection));
+	}
+	
+	@Transactional
+	public void delete(Long collectionId, CustomUserDetails currentUser) {
+		Collection collection = securedGetCollection(collectionId, currentUser);
+		collectionRepository.delete(collection);
+	}
+	
+	@Transactional
+	public void addMovie(Long collectionId, Long movieId, CustomUserDetails currentUser) {
+		
+		Collection collection = securedGetCollection(collectionId, currentUser);
+		Movie movie = movieService.getEntityById(movieId);
+		
+		boolean alreadyExists = collectionMovieRepository.existsByCollectionIdAndMovieId(collectionId, movieId);
+		if (alreadyExists) {
+			throw new MovieAlreadyInCollectionException("Фильм " + movie.getTitle() + " уже добавлен в коллекцию " + collection.getName());
+		}
+		
+		collection.addMovie(mapToCollectionMovieEntity(collection, movie));
+	}
+	
+	@Transactional
+	public void removeMovie(Long collectionId, Long movieId, CustomUserDetails currentUser) {
+		
+		Collection collection = securedGetCollection(collectionId, currentUser);
+		
+		CollectionMovie link = collectionMovieRepository.findByCollectionIdAndMovieId(collectionId, movieId)
+				.orElseThrow(() -> new ResourceNotFoundException("Фильм с id = " + movieId + " не найден в коллекции \"" + collection.getName() + "\""));
+		
+		collection.removeMovie(link);
+	}
+	
+	private static Collection mapToCollectionEntity(CollectionRequestDto request, User user) {
+		
+		Collection newCollection = new Collection();
+		
+		newCollection.setUser(user);
+		newCollection.setDescription(request.description());
+		newCollection.setName(request.name());
+		newCollection.setPublic(request.isPublic());
+		
+		return newCollection;
+	}
 	
 	private Collection securedGetCollection(Long collectionId, CustomUserDetails currentUser) {
 		
@@ -51,18 +126,6 @@ public class CollectionService {
 		return collection;
 	}
 	
-	private static Collection mapToCollectionEntity(CollectionRequestDto request, User user) {
-		
-		Collection newCollection = new Collection();
-		
-		newCollection.setUser(user);
-		newCollection.setDescription(request.description());
-		newCollection.setName(request.name());
-		newCollection.setPublic(request.isPublic());
-		
-		return newCollection;
-	}
-	
 	private CollectionMovie mapToCollectionMovieEntity (Collection collection, Movie movie) {
 		CollectionMovie newCollectionMovie = new CollectionMovie();
 		
@@ -70,76 +133,6 @@ public class CollectionService {
 		newCollectionMovie.setMovie(movie);
 		
 		return newCollectionMovie;
-	}
-	
-	@Transactional(readOnly = true)
-	public CollectionResponseDto getById(Long collectionId, CustomUserDetails currentUser) {
-		Collection collection = securedGetCollection(collectionId, currentUser);
-		return collectionMapper.toDto(collection);
-	}
-	
-	@Transactional(readOnly = true)
-	public CollectionWithMoviesResponseDto getWithMoviesById(Long collectionId, CustomUserDetails currentUser) {
-		Collection collection = securedGetCollection(collectionId, currentUser);
-		return collectionMapper.toWithMoviesDto(collection);
-	}
-	
-	@Transactional(readOnly = true)
-	public List<CollectionResponseDto> getUserCollections(CustomUserDetails currentUser) {
-		
-		// TODO Сделать возврат только ПУБЛИЧНЫХ коллекций без проверки на доступ
-		return collectionRepository.findAllByUserId(currentUser.getId())
-				.stream()
-				.map(collectionMapper::toDto)
-				.toList();
-	}
-	
-	@Transactional
-	public CollectionResponseDto createCollection(CollectionRequestDto request, CustomUserDetails currentUser) {
-		
-		boolean isExist = collectionRepository.existsByNameAndUserId(request.name(), currentUser.getId());
-		
-		if (isExist) {
-			throw new CollectionAlreadyExistsException("Коллекция с таким именем уже существует");
-		}
-		
-		User user = userService.getById(currentUser.getId());
-		Collection newCollection = mapToCollectionEntity(request, user);
-		return collectionMapper.toDto(collectionRepository.save(newCollection));
-	}
-	
-	@Transactional
-	public void deleteCollection(Long collectionId, CustomUserDetails currentUser) {
-		
-		Collection collection = securedGetCollection(collectionId, currentUser);
-		collectionRepository.delete(collection);
-	}
-	
-	@Transactional
-	public void addMovieToTheCollection(Long collectionId, Long movieId, CustomUserDetails currentUser) {
-		
-		Collection collection = securedGetCollection(collectionId, currentUser);
-		Movie movie = movieService.getById(movieId);
-		
-		boolean alreadyExists = collectionMovieRepository.existsByCollectionIdAndMovieId(collectionId, movieId);
-		if (alreadyExists) {
-			throw new MovieAlreadyInCollectionException("Фильм " + movie.getTitle() + " уже добавлен в коллекцию " + collection.getName());
-		}
-		
-		// NOTE Используется метод-helper addMovie()
-		collection.addMovie(mapToCollectionMovieEntity(collection, movie));
-	}
-	
-	@Transactional
-	public void removeMovieFromCollection(Long collectionId, Long movieId, CustomUserDetails currentUser) {
-		
-		Collection collection = securedGetCollection(collectionId, currentUser);
-		
-		CollectionMovie link = collectionMovieRepository.findByCollectionIdAndMovieId(collectionId, movieId)
-				.orElseThrow(() -> new ResourceNotFoundException("Фильм с id = " + movieId + " не найден в коллекции \"" + collection.getName() + "\""));
-		
-		// NOTE Используется метод-helper removeMovie()
-		collection.removeMovie(link);
 	}
 	
 }

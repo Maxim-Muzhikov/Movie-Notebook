@@ -1,7 +1,9 @@
 package com.movienotebook.api.service;
 
+import com.movienotebook.api.dto.user.UserResponseDto;
 import com.movienotebook.api.entity.User;
 import com.movienotebook.api.exception.ResourceNotFoundException;
+import com.movienotebook.api.mapper.UserMapper;
 import com.movienotebook.api.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -12,10 +14,16 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserService {
 	
 	private final UserRepository userRepository;
+	private final UserMapper userMapper;
 	
-	public User getByUsername(String username) {
-		return userRepository.findByUsername(username)
-				.orElseThrow(() -> new ResourceNotFoundException("Пользователь с ником " + username + " не найден"));
+	public UserResponseDto getByUsername(String username) {
+		return userMapper.toDto(userRepository.findByUsername(username)
+				.orElseThrow(() -> new ResourceNotFoundException("Пользователь с ником " + username + " не найден")));
+	}
+	
+	public UserResponseDto getById(Long id) {
+		return userMapper.toDto(userRepository.findById(id)
+				.orElseThrow(() -> new ResourceNotFoundException("Пользователь с номером " + id + " не найден")));
 	}
 	
 	public boolean existsByUsername(String username) {
@@ -26,17 +34,22 @@ public class UserService {
 		return userRepository.existsByEmail(email);
 	}
 	
-	public User getById(Long id) {
+	User getEntityByUsername(String username) {
+		return userRepository.findByUsername(username)
+				.orElseThrow(() -> new ResourceNotFoundException("Пользователь с ником " + username + " не найден"));
+	}
+	
+	User getEntityById(Long id) {
 		return userRepository.findById(id)
 				.orElseThrow(() -> new ResourceNotFoundException("Пользователь с номером " + id + " не найден"));
 	}
 	
-	@Transactional
-	public User save(User user) {
-		return userRepository.save(user);
+	User getReferenceById(Long id) {
+		return userRepository.getReferenceById(id);
 	}
 	
-	public User getReferenceById(Long id) {
-		return userRepository.getReferenceById(id);
+	@Transactional
+	User save(User user) {
+		return userRepository.save(user);
 	}
 }

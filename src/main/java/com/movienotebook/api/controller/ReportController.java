@@ -3,7 +3,6 @@ package com.movienotebook.api.controller;
 import com.movienotebook.api.dto.report.ReportRequestDto;
 import com.movienotebook.api.dto.report.ReportResponseDto;
 import com.movienotebook.api.dto.report.ResolveReportRequestDto;
-import com.movienotebook.api.mapper.ReportMapper;
 import com.movienotebook.api.security.CustomUserDetails;
 import com.movienotebook.api.service.ReportService;
 import jakarta.validation.Valid;
@@ -20,14 +19,13 @@ import java.util.List;
 public class ReportController {
 	
 	private final ReportService reportService;
-	private final ReportMapper reportMapper;
 	
 	@PostMapping()
 	public ResponseEntity<Void> reporting(
 			@Valid @RequestBody ReportRequestDto request,
 			@AuthenticationPrincipal CustomUserDetails userDetails) {
 		
-		reportService.addOrUpdatedReport(request, userDetails);
+		reportService.save(request, userDetails);
 		
 		return ResponseEntity.ok().build();
 	}
@@ -35,10 +33,7 @@ public class ReportController {
 	@GetMapping
 	public ResponseEntity<List<ReportResponseDto>> getAllReports() {
 		
-		return ResponseEntity.ok(reportService.getAll()
-				.stream()
-				.map(reportMapper::toDto)
-				.toList());
+		return ResponseEntity.ok(reportService.getAll());
 	}
 	
 	@PostMapping("/{id}/resolve")

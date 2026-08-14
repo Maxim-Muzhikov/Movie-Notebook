@@ -1,10 +1,12 @@
 package com.movienotebook.api.service;
 
 import com.movienotebook.api.dto.report.ReportRequestDto;
+import com.movienotebook.api.dto.report.ReportResponseDto;
 import com.movienotebook.api.entity.Report;
 import com.movienotebook.api.entity.Review;
 import com.movienotebook.api.entity.User;
 import com.movienotebook.api.exception.ResourceNotFoundException;
+import com.movienotebook.api.mapper.ReportMapper;
 import com.movienotebook.api.repository.ReportRepository;
 import com.movienotebook.api.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
@@ -21,17 +23,18 @@ public class ReportService {
 	private final ReportRepository reportRepository;
 	private final ReviewService reviewService;
 	private final UserService userService;
+	private final ReportMapper reportMapper;
 	
 	@Transactional
-	public Report addOrUpdatedReport(ReportRequestDto request, CustomUserDetails currentUser) {
+	public ReportResponseDto save(ReportRequestDto request, CustomUserDetails currentUser) {
 		
-		Review review = reviewService.getReviewById(request.reviewId());
+		Review review = reviewService.getEntityById(request.reviewId());
 		
 		Optional<Report> existingReport = reportRepository.findByReviewAndReporter(request.reviewId(), currentUser.getId());
 		
 		if (existingReport.isPresent()) {
 			existingReport.get().setReason(request.reason());
-			return existingReport.get();
+			return reportMapper.toDto(existingReport.get());
 		} else {
 			User user = userService.getReferenceById(currentUser.getId());
 			Report newReport = new Report();
@@ -41,12 +44,8 @@ public class ReportService {
 			// TODO Создать Status Enum
 			newReport.setStatus("NEW");
 			reportRepository.save(newReport);
-			return newReport;
+			return reportMapper.toDto(newReport);
 		}
-	}
-	
-	public List<Report> getAll() {
-		return reportRepository.findAll();
 	}
 	
 	@Transactional
@@ -57,9 +56,17 @@ public class ReportService {
 		
 		if ("DELETE_REVIEW".equals(action)) {
 			reportRepository.delete(report);
-			reviewService.deleteReview(report.getReview().getId(), currentUser);
+			reviewService.delete(report.getReview().getId(), currentUser);
 		} else if ("REJECT_REPORT".equals(action)) {
 			reportRepository.delete(report);
 		}
+	}
+	
+	public List<ReportResponseDto> getAll() {
+		return reportRepository.findAll().stream().map(reportMapper::toDto).toList();
+	}
+	
+	List<Report> getAllEntity() {
+		return reportRepository.findAll();
 	}
 }
