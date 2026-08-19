@@ -1,10 +1,12 @@
 package com.movienotebook.api.service;
 
+import com.movienotebook.api.dto.user.UserResponseDto;
 import com.movienotebook.api.entity.User;
 import com.movienotebook.api.exception.ResourceNotFoundException;
+import com.movienotebook.api.mapper.UserMapper;
 import com.movienotebook.api.repository.UserRepository;
 import com.movienotebook.api.util.ClassesExamples;
-import io.jsonwebtoken.lang.Classes;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -16,10 +18,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import javax.swing.*;
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -28,20 +30,20 @@ class UserServiceTest {
 	@Mock
 	private UserRepository userRepository;
 	
+	@Mock
+	private UserMapper userMapper;
+	
 	@InjectMocks
 	private UserService userService;
 	
 	@Captor
 	private ArgumentCaptor<User> userCaptor;
 	
-	private User testUser;
-	private User expectedUser;
+	private User existingUser;
 	
 	@BeforeEach
 	void setUp() {
-		testUser = ClassesExamples.getExistingUser();
-		expectedUser = ClassesExamples.getExistingUser();
-		
+		existingUser = ClassesExamples.getExistingUser();
 	}
 	
 	@Nested
@@ -49,27 +51,28 @@ class UserServiceTest {
 	class GetByUsernameTests {
 		
 		@Test
-		@DisplayName("Если пользователь существует, должен вернуть существующего пользователя")
-		void getByUsername_whenUserExist_shouldReturnExistingUser () {
+		@DisplayName("Если пользователь существует, должен отобразить его в DTO и вернуть")
+		void getByUsername_whenUserExist_shouldReturnDtoOfExistingUser() {
 			// Arrange
-			String username = testUser.getUsername();
+			String username = existingUser.getUsername();
 			
-			when(userRepository.findByUsername(username)).thenReturn(Optional.of(testUser));
+			UserResponseDto mappedUser = mapUserToResponseDto(existingUser);
+			
+			when(userRepository.findByUsername(username)).thenReturn(Optional.of(existingUser));
+			when(userMapper.toDto(existingUser)).thenReturn(mappedUser);
 			
 			// Act
-			User returnedUser = userService.getByUsername(username);
+			UserResponseDto returnedUser = userService.getByUsername(username);
 			
-			//Assert
-			assertThat(returnedUser)
-					.usingRecursiveComparison()
-					.isEqualTo(expectedUser);
+			// Assert
+			assertThat(returnedUser).isSameAs(mappedUser);
 		}
 		
 		@Test
 		@DisplayName("Если пользователь не существует, должен выбросить исключение ResourceNotFound")
 		void getByUsername_whenUserDoesNotExist_shouldThrowException () {
 			// Arrange
-			String username = testUser.getUsername();
+			String username = "Несуществующий пользователь";
 			
 			when(userRepository.findByUsername(username)).thenReturn(Optional.empty());
 			
@@ -80,105 +83,32 @@ class UserServiceTest {
 	}
 	
 	@Nested
-	@DisplayName("Тесты метода existsByEmail")
-	class ExistsByUsernameTests {
-		
-		@Test
-		@DisplayName("Если пользователь существует, должен вернуть true")
-		void existsByUsername_whenUserExist_shouldReturnTrue() {
-			// Arrange
-			String username = testUser.getUsername();
-			
-			when(userRepository.existsByUsername(username)).thenReturn(true);
-			
-			// Act
-			boolean returnedAnswer = userService.existsByUsername(username);
-			
-			// Assert
-			assertThat(returnedAnswer)
-					.isTrue();
-		}
-		
-		@Test
-		@DisplayName("Если пользователь не существует, должен вернуть false")
-		void existsByUsername_whenUserDoesNotExist_shouldReturnFalse() {
-			// Arrange
-			String username = testUser.getUsername();
-			
-			when(userRepository.existsByUsername(username)).thenReturn(false);
-			
-			// Act
-			boolean returnedAnswer = userService.existsByUsername(username);
-			
-			// Assert
-			assertThat(returnedAnswer)
-					.isFalse();
-		}
-	}
-	
-	@Nested
-	@DisplayName("Тесты методы existsByEmail")
-	class ExistsByEmail {
-		
-		@Test
-		@DisplayName("Если пользователь существует, должен вернуть true")
-		void existsByUsername_whenUserExist_shouldReturnTrue() {
-			// Arrange
-			String email = testUser.getEmail();
-			
-			when(userRepository.existsByEmail(email)).thenReturn(true);
-			
-			// Act
-			boolean returnedAnswer = userService.existsByEmail(email);
-			
-			// Assert
-			assertThat(returnedAnswer)
-					.isTrue();
-		}
-		
-		@Test
-		@DisplayName("Если пользователь не существует, должен вернуть false")
-		void existsByUsername_whenUserDoesNotExist_shouldReturnFalse() {
-			// Arrange
-			String email = testUser.getEmail();
-			
-			when(userRepository.existsByEmail(email)).thenReturn(false);
-			
-			// Act
-			boolean returnedAnswer = userService.existsByEmail(email);
-			
-			// Assert
-			assertThat(returnedAnswer)
-					.isFalse();
-		}
-	}
-	
-	@Nested
 	@DisplayName("Тесты метода getById")
 	class GetByIdTests {
 		
 		@Test
-		@DisplayName("Если пользователь существует, должен вернуть существующего пользователя")
-		void getById_whenUserExist_shouldReturnExistingUser() {
+		@DisplayName("Если пользователь существует, должен отобразить его в DTO и вернуть")
+		void getById_whenUserExist_shouldReturnDtoOfExistingUser() {
 			// Arrange
-			Long id = testUser.getId();
+			Long id = existingUser.getId();
 			
-			when(userRepository.findById(id)).thenReturn(Optional.of(testUser));
+			UserResponseDto mappedUser = mapUserToResponseDto(existingUser);
+			
+			when(userRepository.findById(id)).thenReturn(Optional.of(existingUser));
+			when(userMapper.toDto(existingUser)).thenReturn(mappedUser);
 			
 			// Act
-			User returnedUser = userService.getById(id);
+			UserResponseDto returnedUser = userService.getById(id);
 			
 			//Assert
-			assertThat(returnedUser)
-					.usingRecursiveComparison()
-					.isEqualTo(expectedUser);
+			assertThat(returnedUser).isSameAs(mappedUser);
 		}
 		
 		@Test
 		@DisplayName("Если пользователя не существует, должен выбросить исключение ResourceNotFound")
 		void getById_whenUserDoesNotExist_shouldThrowException() {
 			// Arrange
-			Long id = testUser.getId();
+			Long id = 999L;
 			
 			when(userRepository.findById(id)).thenReturn(Optional.empty());
 			
@@ -186,6 +116,169 @@ class UserServiceTest {
 			assertThatThrownBy(() -> userService.getById(id))
 					.isInstanceOf(ResourceNotFoundException.class);
 		}
+		
+	}
+	
+	@Nested
+	@DisplayName("Тесты метода existsByEmail")
+	class ExistsByUsernameTests {
+		
+		
+		@Test
+		@DisplayName("Если пользователь существует, должен вернуть true")
+		void existsByUsername_whenUserExist_shouldReturnTrue() {
+			// Arrange
+			String username = existingUser.getUsername();
+			
+			when(userRepository.existsByUsername(username)).thenReturn(true);
+			
+			// Act
+			boolean returnedAnswer = userService.existsByUsername(username);
+			
+			// Assert
+			assertThat(returnedAnswer).isTrue();
+		}
+		
+		@Test
+		@DisplayName("Если пользователь не существует, должен вернуть false")
+		void existsByUsername_whenUserDoesNotExist_shouldReturnFalse() {
+			// Arrange
+			String username = "Несуществующий пользователь";
+			
+			when(userRepository.existsByUsername(username)).thenReturn(false);
+			
+			// Act
+			boolean returnedAnswer = userService.existsByUsername(username);
+			
+			// Assert
+			assertThat(returnedAnswer).isFalse();
+		}
+	
+	}
+	
+	@Nested
+	@DisplayName("Тесты методы existsByEmail")
+	class ExistsByEmail {
+		
+		
+		@Test
+		@DisplayName("Если пользователь существует, должен вернуть true")
+		void existsByUsername_whenUserExist_shouldReturnTrue() {
+			// Arrange
+			String email = existingUser.getEmail();
+			
+			when(userRepository.existsByEmail(email)).thenReturn(true);
+			
+			// Act
+			boolean returnedAnswer = userService.existsByEmail(email);
+			
+			// Assert
+			assertThat(returnedAnswer).isTrue();
+		}
+		
+		@Test
+		@DisplayName("Если пользователь не существует, должен вернуть false")
+		void existsByUsername_whenUserDoesNotExist_shouldReturnFalse() {
+			// Arrange
+			String email = "Несуществующая почта";
+			
+			when(userRepository.existsByEmail(email)).thenReturn(false);
+			
+			// Act
+			boolean returnedAnswer = userService.existsByEmail(email);
+			
+			// Assert
+			assertThat(returnedAnswer).isFalse();
+		}
+	
+	}
+	
+	@Nested
+	@DisplayName("Тесты метода getEntityByUsername")
+	class GetEntityByUsernameTests {
+		
+		@Test
+		@DisplayName("Если пользователь существует, должен вернуть его сущность")
+		void getEntityByUsername_whenUserExist_shouldReturnEntityOfExistingUser() {
+			// Arrange
+			String username = existingUser.getUsername();
+			
+			when(userRepository.findByUsername(username)).thenReturn(Optional.of(existingUser));
+			
+			// Act
+			User returnedUser = userService.getEntityByUsername(username);
+			
+			// Assert
+			assertThat(returnedUser).isSameAs(existingUser);
+		}
+		
+		@Test
+		@DisplayName("Если пользователя не существует, должен выбросить исключение ResourceNotFound")
+		void getEntityByUsername_whenUserDoesNotExist_shouldThrowException() {
+			// Arrange
+			String username = "Несуществующий пользователь";
+			
+			when(userRepository.findByUsername(username)).thenReturn(Optional.empty());
+			
+			//Act & Assert
+			assertThatThrownBy(() -> userService.getEntityByUsername(username))
+					.isInstanceOf(ResourceNotFoundException.class);
+		}
+	}
+	
+	// getEntityById
+	@Nested
+	@DisplayName("Тесты метода getEntityById")
+	class GetEntityByIdTests {
+		@Test
+		@DisplayName("Если пользователь существует, должен вернуть его сущность")
+		void getEntityById_whenUserExists_shouldReturnEntityOfExistingUser() {
+			// Arrange
+			Long id = existingUser.getId();
+			
+			when(userRepository.findById(id)).thenReturn(Optional.of(existingUser));
+			
+			// Act
+			User returnedUser = userService.getEntityById(id);
+			
+			// Assert
+			assertThat(returnedUser).isSameAs(existingUser);
+		}
+		
+		@Test
+		@DisplayName("Если пользователя не существует, должен выбросить исключение ResourceNotFound")
+		void getEntityById_whenUserDoesNotExist_shouldThrowException() {
+			// Arrange
+			Long id = existingUser.getId();
+			
+			when(userRepository.findById(id)).thenReturn(Optional.empty());
+			
+			//Act & Assert
+			assertThatThrownBy(() -> userService.getEntityById(id))
+					.isInstanceOf(ResourceNotFoundException.class);
+		}
+	}
+	
+	@Nested
+	@DisplayName("Тесты метода getReferenceById")
+	class GetReferenceByIdTests {
+		
+		@Test
+		@DisplayName("Должен вернуть ссылку на пользователя")
+		void getReferenceByIdTest_always_shouldReturnReferenceUser() {
+			// Arrange
+			Long id = existingUser.getId();
+			
+			when(userRepository.getReferenceById(id)).thenReturn(existingUser);
+			
+			// Act
+			User returnedUser = userService.getReferenceById(id);
+			
+			// Assert
+			assertThat(returnedUser)
+					.isSameAs(existingUser);
+		}
+		
 	}
 	
 	@Nested
@@ -198,10 +291,11 @@ class UserServiceTest {
 			// Arrange
 			User userToSave = ClassesExamples.getUserToSave();
 			
-			when(userRepository.save(userToSave)).thenReturn(testUser);
+			when(userRepository.save(userToSave)).thenReturn(existingUser);
 			
 			// Expected
 			User expectedSavedUser = ClassesExamples.getUserToSave();
+			User expectedReturnedUser = ClassesExamples.getExistingUser();
 			
 			// Act
 			User returnedUser = userService.save(userToSave);
@@ -216,33 +310,19 @@ class UserServiceTest {
 					.isEqualTo(expectedSavedUser);
 			
 			assertThat(returnedUser)
-					.isSameAs(testUser)
 					.usingRecursiveComparison()
-					.isEqualTo(expectedUser);
+					.isEqualTo(expectedReturnedUser);
 		}
-	}
-
-	@Nested
-	@DisplayName("Тесты метода getReferenceById")
-	class GetReferenceByIdTests {
 		
-		@Test
-		@DisplayName("Должен вернуть reference пользователя")
-		void getReferenceByIdTest_always_shouldReturnReferenceUser() {
-			// Arrange
-			Long id = testUser.getId();
-			
-			when(userRepository.getReferenceById(id)).thenReturn(testUser);
-			
-			// Act
-			User returnedUser = userService.getReferenceById(id);
-			
-			// Assert
-			assertThat(returnedUser)
-					.usingRecursiveComparison()
-					.isEqualTo(expectedUser);
-		}
 	}
 	
-	
+	private @NotNull UserResponseDto mapUserToResponseDto(User user) {
+		return new UserResponseDto(
+				user.getId(),
+				user.getUsername(),
+				user.getEmail(),
+				user.getRole().toString(),
+				user.getCreatedAt()
+		);
+	}
 }

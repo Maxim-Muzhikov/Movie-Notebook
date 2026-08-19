@@ -1,14 +1,16 @@
 package com.movienotebook.api.service;
 
 import com.movienotebook.api.dto.review.ReviewRequestDto;
+import com.movienotebook.api.dto.review.ReviewResponseDto;
 import com.movienotebook.api.entity.Movie;
 import com.movienotebook.api.entity.Review;
 import com.movienotebook.api.entity.User;
 import com.movienotebook.api.exception.ResourceNotFoundException;
+import com.movienotebook.api.mapper.ReviewMapper;
+import com.movienotebook.api.repository.ReportRepository;
 import com.movienotebook.api.repository.ReviewRepository;
 import com.movienotebook.api.security.CustomUserDetails;
 import com.movienotebook.api.util.ClassesExamples;
-import io.jsonwebtoken.lang.Classes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -22,9 +24,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
-import java.util.*;
+import java.time.OffsetDateTime;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -39,283 +45,300 @@ class ReviewServiceTest {
 	@Mock
 	private UserService userService;
 	
+	@Mock
+	private ReviewMapper reviewMapper;
+	
+	@Mock
+	private ReportRepository reportRepository; // Инжектится в сервис, но не используется в методах напрямую
+	
 	@InjectMocks
 	private ReviewService reviewService;
 	
 	@Captor
 	private ArgumentCaptor<Review> reviewCaptor;
 	
-	private CustomUserDetails currentUser;
-	private Movie testMovie;
 	private User testUser;
+	private Movie testMovie;
 	private Review testReview;
+	private CustomUserDetails currentUser;
+	private ReviewResponseDto mockReviewResponseDto;
 	
 	@BeforeEach
 	void setUp() {
+		testUser = ClassesExamples.getExistingUser();
+		testMovie = ClassesExamples.getExistingMovie();
+		testReview = ClassesExamples.getExistingReview();
+		testReview.setUser(testUser);
+		testReview.setMovie(testMovie);
+		
 		currentUser = new CustomUserDetails(
-				1L,
-				"Имя пользователя",
-				"Хэш пароля",
+				testUser.getId(),
+				testUser.getUsername(),
+				testUser.getPasswordHash(),
 				List.of(new SimpleGrantedAuthority("ROLE_USER"))
 		);
 		
-		testMovie = ClassesExamples.getExistingMovie();
-		testUser = ClassesExamples.getExistingUser();
-		testReview = ClassesExamples.getExistingReview();
-		
-		testReview.setUser(testUser);
+		mockReviewResponseDto = new ReviewResponseDto(
+				testReview.getId(),
+				testReview.getContent(),
+				OffsetDateTime.now(),
+				testUser.getUsername()
+		);
 	}
 	
 	@Nested
-	@DisplayName("Тесты метода addOrUpdateReview")
-	class AddOrUpdateReviewTests {
+	@DisplayName("Тесты метода save")
+	class SaveTests {
 		
 		@Test
-		@DisplayName("Если отзыв не существует, должен создать новый отзыв")
-		void addOrUpdateReview_whenReviewDoesNotExist_shouldCreateNewReview() {
+		@DisplayName("Если отзыв пользователя на фильм уже существует, должен обновить контент и вернуть DTO")
+		void save_whenReviewExists_shouldUpdateContentAndReturnDto() {
 			// Arrange
-			var requestDto = new ReviewRequestDto(testMovie.getId(), "Отличный фильм!");
+			String newContent = "Обновленный контент";
+			ReviewRequestDto request = new ReviewRequestDto(testMovie.getId(), newContent);
 			
-			when(movieService.getById(testMovie.getId())).thenReturn(testMovie);
+			when(movieService.getEntityById(testMovie.getId())).thenReturn(testMovie);
+			when(reviewRepository.findByMovieIdAndUserId(testMovie.getId(), currentUser.getId()))
+					.thenReturn(Optional.of(testReview));
+			when(reviewMapper.toDto(testReview)).thenReturn(mockReviewResponseDto);
+			
+			// Act
+			ReviewResponseDto result = reviewService.save(request, currentUser);
+			
+			// Assert
+			verify(reviewRepository).save(reviewCaptor.capture());
+			Review savedReview = reviewCaptor.getValue();
+			
+			assertThat(savedReview)
+					.isSameAs(testReview);
+			
+			assertThat(savedReview.getContent())
+					.isEqualTo(newContent);
+			
+			assertThat(result)
+					.isSameAs(mockReviewResponseDto);
+		}
+		
+		@Test
+		@DisplayName("Если отзыва пользователя на фильм нет, должен создать новый, сохранить и вернуть DTO")
+		void save_whenReviewDoesNotExist_shouldCreateNewReviewAndReturnDto() {
+			// Arrange
+			String newContent = "Новый отличный отзыв";
+			ReviewRequestDto request = new ReviewRequestDto(testMovie.getId(), newContent);
+			
+			when(movieService.getEntityById(testMovie.getId())).thenReturn(testMovie);
 			when(reviewRepository.findByMovieIdAndUserId(testMovie.getId(), currentUser.getId()))
 					.thenReturn(Optional.empty());
 			when(userService.getReferenceById(currentUser.getId())).thenReturn(testUser);
+			when(reviewMapper.toDto(any(Review.class))).thenReturn(mockReviewResponseDto);
 			
 			// Expected
-			var expectedReview = new Review();
-			expectedReview.setContent(requestDto.content());
-			expectedReview.setMovie(testMovie);
-			expectedReview.setUser(testUser);
-			expectedReview.setIsDeleted(false);
+			Review expectedState = new Review();
+			expectedState.setMovie(testMovie);
+			expectedState.setUser(testUser);
+			expectedState.setContent(newContent);
 			
 			// Act
-			Review returnedReview = reviewService.addOrUpdateReview(requestDto, currentUser);
+			ReviewResponseDto result = reviewService.save(request, currentUser);
 			
 			// Assert
-			verify(reviewRepository, times(1)).save(reviewCaptor.capture());
+			verify(reviewRepository).save(reviewCaptor.capture());
 			Review savedReview = reviewCaptor.getValue();
-			
-			assertThat(returnedReview)
-					.isNotNull()
-					.isSameAs(savedReview);
 			
 			assertThat(savedReview)
 					.usingRecursiveComparison()
-					.isEqualTo(expectedReview);
-		}
-		
-		
-		@Test
-		@DisplayName("Если отзыв существует, должен обновить существующий отзыв")
-		void addOrUpdateReview_whenReviewAlreadyExists_shouldUpdateExistingReview() {
-			// Arrange
-			var requestDto = new ReviewRequestDto(testMovie.getId(), "Обновленный текст отзыва");
-			
-			when(movieService.getById(testMovie.getId())).thenReturn(testMovie);
-			when(reviewRepository.findByMovieIdAndUserId(testMovie.getId(), currentUser.getId()))
-					.thenReturn(Optional.of(testReview));
-			
-			// Expected
-			Review expectedReview = ClassesExamples.getExistingReview();
-			expectedReview.setUser(ClassesExamples.getExistingUser());
-			expectedReview.setContent(requestDto.content());
-			
-			// Act
-			Review result = reviewService.addOrUpdateReview(requestDto, currentUser);
-			
-			// Assert
-			verify(reviewRepository, times(1)).save(reviewCaptor.capture());
-			verify(userService, never()).getReferenceById(any());
-			Review updatedReview = reviewCaptor.getValue();
+					.ignoringFields("id", "isDeleted", "updatedAt", "createdAt") // Поля, устанавливаемые БД или Hibernate
+					.isEqualTo(expectedState);
 			
 			assertThat(result)
-					.isNotNull()
-					.isSameAs(updatedReview);
-			
-			assertThat(updatedReview)
-					.usingRecursiveComparison()
-					.isEqualTo(expectedReview);
+					.isSameAs(mockReviewResponseDto);
 		}
 	}
 	
 	@Nested
-	@DisplayName("Тесты метода getReviewsByMovieId")
-	class GetReviewsByMovieIdTests {
+	@DisplayName("Тесты метода delete")
+	class DeleteTests {
+		
 		@Test
-		@DisplayName("Если отзывы есть, должен без изменений вернуть список отзывов")
-		void getReviewsByMovieId_whenReviewsExist_shouldReturnExistingReviews() {
+		@DisplayName("Если отзыв существует и пользователь является автором, должен удалить отзыв")
+		void delete_whenReviewExistsAndUserIsAuthor_shouldDeleteReview() {
 			// Arrange
-			Long movieId = testMovie.getId();
-			
-			when(reviewRepository.findAllByMovieId(movieId)).thenReturn(List.of(testReview));
-			
-			// Expected
-			Review expectedReview = ClassesExamples.getExistingReview();
-			expectedReview.setUser(ClassesExamples.getExistingUser());
+			Long reviewId = testReview.getId();
+			when(reviewRepository.findById(reviewId)).thenReturn(Optional.of(testReview));
 			
 			// Act
-			List<Review> returnedReviews = reviewService.getReviewsByMovieId(movieId);
+			reviewService.delete(reviewId, currentUser);
 			
 			// Assert
-			assertThat(returnedReviews)
-					.usingRecursiveComparison()
-					.isEqualTo(List.of(expectedReview));
+			verify(reviewRepository).delete(testReview);
 		}
 		
 		@Test
-		@DisplayName("Если отзывов нет, должен вернуть пустой список отзывов")
-		void getReviewsByMovieId_whenReviewsDoesNotExist_shouldReturnEmptyList() {
+		@DisplayName("Если отзыв существует и пользователь администратор, должен удалить отзыв")
+		void delete_whenReviewExistsAndUserIsAdmin_shouldDeleteReview() {
+			// Arrange
+			Long reviewId = testReview.getId();
+			User author = ClassesExamples.getExistingUser();
+			author.setId(999L);
+			testReview.setUser(author);
+			
+			CustomUserDetails adminUser = new CustomUserDetails(
+					1L, "admin", "hash", List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))
+			);
+			
+			when(reviewRepository.findById(reviewId)).thenReturn(Optional.of(testReview));
+			
+			// Act
+			reviewService.delete(reviewId, adminUser);
+			
+			// Assert
+			verify(reviewRepository).delete(testReview);
+		}
+		
+		@Test
+		@DisplayName("Если отзыва не существует, должен выбросить исключение ResourceNotFoundException")
+		void delete_whenReviewDoesNotExist_shouldThrowException() {
+			// Arrange
+			Long reviewId = 999L;
+			when(reviewRepository.findById(reviewId)).thenReturn(Optional.empty());
+			
+			// Act & Assert
+			assertThatThrownBy(() -> reviewService.delete(reviewId, currentUser))
+					.isInstanceOf(ResourceNotFoundException.class);
+		}
+		
+		@Test
+		@DisplayName("Если пользователь не автор и не администратор, должен выбросить исключение AccessDeniedException")
+		void delete_whenUserIsNotAuthorOrAdmin_shouldThrowException() {
+			// Arrange
+			Long reviewId = testReview.getId();
+			User author = ClassesExamples.getExistingUser();
+			author.setId(999L); // ID отличается от currentUser
+			testReview.setUser(author);
+			
+			when(reviewRepository.findById(reviewId)).thenReturn(Optional.of(testReview));
+			
+			// Act & Assert
+			assertThatThrownBy(() -> reviewService.delete(reviewId, currentUser))
+					.isInstanceOf(AccessDeniedException.class);
+		}
+	}
+	
+	@Nested
+	@DisplayName("Тесты метода findAllByMovieId")
+	class FindAllByMovieIdTests {
+		
+		@Test
+		@DisplayName("Если отзывы существуют, должен вернуть список DTO")
+		void findAllByMovieId_whenReviewsExist_shouldReturnListOfDtos() {
 			// Arrange
 			Long movieId = testMovie.getId();
+			when(reviewRepository.findAllByMovieId(movieId)).thenReturn(List.of(testReview));
+			when(reviewMapper.toDto(testReview)).thenReturn(mockReviewResponseDto);
 			
+			// Act
+			List<ReviewResponseDto> result = reviewService.findAllByMovieId(movieId);
+			
+			// Assert
+			assertThat(result)
+					.hasSize(1)
+					.element(0).isSameAs(mockReviewResponseDto);
+		}
+		
+		@Test
+		@DisplayName("Если отзывов нет, должен вернуть пустой список")
+		void findAllByMovieId_whenNoReviewsExist_shouldReturnEmptyList() {
+			// Arrange
+			Long movieId = testMovie.getId();
 			when(reviewRepository.findAllByMovieId(movieId)).thenReturn(Collections.emptyList());
 			
-			// Expected
-			var expectedReviews = Collections.emptyList();
-			
 			// Act
-			List<Review> returnedReviews = reviewService.getReviewsByMovieId(movieId);
+			List<ReviewResponseDto> result = reviewService.findAllByMovieId(movieId);
 			
 			// Assert
-			assertThat(returnedReviews)
-					.usingRecursiveComparison()
-					.isEqualTo(expectedReviews);
+			assertThat(result).isEmpty();
 		}
 	}
 	
 	@Nested
-	@DisplayName("Тесты метода deleteReview")
-	class DeleteReviewTests {
+	@DisplayName("Тесты метода getById")
+	class GetByIdTests {
+		
 		@Test
-		@DisplayName("Если отзыв существует и пользователь его автор, должен удалить существующий отзыв, согласно его номеру")
-		void deleteReview_whenReviewExistAndUserIsAuthor_shouldDeleteExistingReview() {
+		@DisplayName("Если отзыв существует, должен вернуть его DTO")
+		void getById_whenReviewExists_shouldReturnDto() {
 			// Arrange
-			Long reviewId = testReview.getId();
-			
-			when(reviewRepository.findById(reviewId)).thenReturn(Optional.of(testReview));
-			
-			// Expected
-			Review expectedReview = ClassesExamples.getExistingReview();
-			expectedReview.setUser(ClassesExamples.getExistingUser());
+			Long id = testReview.getId();
+			when(reviewRepository.findById(id)).thenReturn(Optional.of(testReview));
+			when(reviewMapper.toDto(testReview)).thenReturn(mockReviewResponseDto);
 			
 			// Act
-			reviewService.deleteReview(reviewId, currentUser);
+			ReviewResponseDto result = reviewService.getById(id);
 			
 			// Assert
-			verify(reviewRepository, times(1)).delete(reviewCaptor.capture());
-			
-			Review deletedReview = reviewCaptor.getValue();
-			
-			assertThat(deletedReview)
-					.usingRecursiveComparison()
-					.isEqualTo(expectedReview);
+			assertThat(result).isSameAs(mockReviewResponseDto);
 		}
 		
 		@Test
-		@DisplayName("Если отзыв существует и пользователь администратор, должен удалить существующий отзыв, согласно его номеру")
-		void deleteReview_whenReviewExistAndUserIsAdmin_shouldDeleteExistingReview() {
+		@DisplayName("Если отзыва не существует, должен выбросить исключение ResourceNotFoundException")
+		void getById_whenReviewDoesNotExist_shouldThrowException() {
 			// Arrange
-			Long reviewId = testReview.getId();
-			currentUser = new CustomUserDetails(
-					2L,
-					"Администратор",
-					"Хэш пароля",
-					List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))
-			);
-			
-			when(reviewRepository.findById(reviewId)).thenReturn(Optional.of(testReview));
-			
-			// Expected
-			Review expectedReview = ClassesExamples.getExistingReview();
-			expectedReview.setUser(ClassesExamples.getExistingUser());
-			
-			// Act
-			reviewService.deleteReview(reviewId, currentUser);
-			
-			// Assert
-			verify(reviewRepository, times(1)).delete(reviewCaptor.capture());
-			
-			Review deletedReview = reviewCaptor.getValue();
-			
-			assertThat(deletedReview)
-					.usingRecursiveComparison()
-					.isEqualTo(expectedReview);
-		}
-		
-		@Test
-		@DisplayName("Если отзыва не существует, должен выбросить ошибку ResourceNotFoundException")
-		void deleteReview_whenReviewDoesNotExist_shouldThrowException() {
-			// Arrange
-			Long reviewId = testReview.getId();
-			
-			when(reviewRepository.findById(reviewId)).thenReturn(Optional.empty());
+			Long id = 999L;
+			when(reviewRepository.findById(id)).thenReturn(Optional.empty());
 			
 			// Act & Assert
-			assertThatThrownBy(() -> reviewService.deleteReview(reviewId, currentUser))
+			assertThatThrownBy(() -> reviewService.getById(id))
 					.isInstanceOf(ResourceNotFoundException.class);
-			
-			// Assert
-			verify(reviewRepository, never()).delete(any());
-		}
-		
-		@Test
-		@DisplayName("Если пользователь ни автор существующего отзыва, ни администратор, то должен выбросить ошибку AccessDenied")
-		void deleteReview_whenUserIsNotAuthorOrAdmin_shouldThrowException() {
-			// Arrange
-			Long reviewId = testReview.getId();
-			Long hackerId = testUser.getId() + 999L;
-			currentUser = new CustomUserDetails(
-					hackerId,
-					"Другой пользователь",
-					"Хэш пароля",
-					List.of(new SimpleGrantedAuthority("ROLE_USER"))
-			);
-			
-			when(reviewRepository.findById(reviewId)).thenReturn(Optional.of(testReview));
-			
-			// Act & Assert
-			assertThatThrownBy(() -> reviewService.deleteReview(reviewId, currentUser))
-					.isInstanceOf(AccessDeniedException.class);
-			
-			// Assert
-			verify(reviewRepository, never()).delete(any());
 		}
 	}
 	
 	@Nested
-	@DisplayName("Тесты метода getReviewById")
-	class GetReviewByIdTest {
+	@DisplayName("Тесты метода findAllEntityByMovieId")
+	class FindAllEntityByMovieIdTests {
+		
 		@Test
-		@DisplayName("Если отзыв существует, должен вернуть существующий отзыв по его номеру без изменений")
-		void getReviewsById_whenReviewExist_shouldReturnExistingReview() {
+		@DisplayName("Всегда возвращает результат из репозитория по ссылке")
+		void findAllEntityByMovieId_always_shouldReturnListFromRepository() {
 			// Arrange
-			Long reviewId = testReview.getId();
-			
-			when(reviewRepository.findById(reviewId)).thenReturn(Optional.of(testReview));
-			
-			// Expected
-			Review expectedReview = ClassesExamples.getExistingReview();
-			expectedReview.setUser(ClassesExamples.getExistingUser());
+			Long movieId = testMovie.getId();
+			List<Review> expectedList = List.of(testReview);
+			when(reviewRepository.findAllByMovieId(movieId)).thenReturn(expectedList);
 			
 			// Act
-			Review returnedReview = reviewService.getReviewById(reviewId);
+			List<Review> result = reviewService.findAllEntityByMovieId(movieId);
 			
 			// Assert
-			assertThat(returnedReview)
-					.usingRecursiveComparison()
-					.isEqualTo(expectedReview);
+			assertThat(result).isSameAs(expectedList);
+		}
+	}
+	
+	@Nested
+	@DisplayName("Тесты метода getEntityById")
+	class GetEntityByIdTests {
+		
+		@Test
+		@DisplayName("Если отзыв существует, должен вернуть его сущность")
+		void getEntityById_whenReviewExists_shouldReturnEntity() {
+			// Arrange
+			Long id = testReview.getId();
+			when(reviewRepository.findById(id)).thenReturn(Optional.of(testReview));
+			
+			// Act
+			Review result = reviewService.getEntityById(id);
+			
+			// Assert
+			assertThat(result).isSameAs(testReview);
 		}
 		
 		@Test
-		@DisplayName("Если отзыва не существует, должен выбросить исключение ResourceNotFound")
-		void getReviewsById_whenReviewDoesNotExist_shouldThrowException() {
+		@DisplayName("Если отзыва не существует, должен выбросить исключение ResourceNotFoundException")
+		void getEntityById_whenReviewDoesNotExist_shouldThrowException() {
 			// Arrange
-			Long reviewId = testReview.getId();
-			
-			when(reviewRepository.findById(reviewId)).thenReturn(Optional.empty());
+			Long id = 999L;
+			when(reviewRepository.findById(id)).thenReturn(Optional.empty());
 			
 			// Act & Assert
-			assertThatThrownBy(() -> reviewService.getReviewById(reviewId))
+			assertThatThrownBy(() -> reviewService.getEntityById(id))
 					.isInstanceOf(ResourceNotFoundException.class);
 		}
 	}

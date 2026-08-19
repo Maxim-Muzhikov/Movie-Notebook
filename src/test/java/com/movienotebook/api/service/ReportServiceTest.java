@@ -1,10 +1,12 @@
 package com.movienotebook.api.service;
 
 import com.movienotebook.api.dto.report.ReportRequestDto;
+import com.movienotebook.api.dto.report.ReportResponseDto;
 import com.movienotebook.api.entity.Report;
 import com.movienotebook.api.entity.Review;
 import com.movienotebook.api.entity.User;
 import com.movienotebook.api.exception.ResourceNotFoundException;
+import com.movienotebook.api.mapper.ReportMapper;
 import com.movienotebook.api.repository.ReportRepository;
 import com.movienotebook.api.security.CustomUserDetails;
 import com.movienotebook.api.util.ClassesExamples;
@@ -41,130 +43,106 @@ class ReportServiceTest {
 	@Mock
 	private UserService userService;
 	
+	@Mock
+	private ReportMapper reportMapper;
+	
 	@InjectMocks
 	private ReportService reportService;
 	
 	@Captor
 	private ArgumentCaptor<Report> reportCaptor;
 	
-	private CustomUserDetails currentUser;
 	private User testUser;
 	private Review testReview;
 	private Report testReport;
-	private Report expectedReport;
+	private CustomUserDetails currentUser;
+	private ReportResponseDto mockReportResponseDto;
 	
 	@BeforeEach
 	void setUp() {
+		testUser = ClassesExamples.getExistingUser();
+		testReview = ClassesExamples.getExistingReview();
+		
+		testReport = ClassesExamples.getExistingReport();
+		testReport.setReview(testReview);
+		testReport.setReporter(testUser);
+		
 		currentUser = new CustomUserDetails(
-				1L,
-				"Имя пользователя",
-				"Хэш пароля",
+				testUser.getId(),
+				testUser.getUsername(),
+				testUser.getPasswordHash(),
 				List.of(new SimpleGrantedAuthority("ROLE_USER"))
 		);
 		
-		testUser = ClassesExamples.getExistingUser();
-		testReview = ClassesExamples.getExistingReview();
-		testReport = ClassesExamples.getExistingReport();
-		expectedReport = ClassesExamples.getExistingReport();
+		mockReportResponseDto = new ReportResponseDto(
+				testReport.getId(),
+				testReport.getReason(),
+				testReview.getContent(),
+				testUser.getUsername(),
+				testReport.getStatus()
+		);
 	}
 	
 	@Nested
-	@DisplayName("Тесты метода getAll")
-	class GetAllTests {
-		@Nested
-		@DisplayName("Тесты метода addOrUpdatedReport")
-		class AddOrUpdatedReportTests {
-			
-			@Test
-			@DisplayName("Если жалоба не существует, должен создать и сохранить новую жалобу")
-			void addOrUpdatedReport_whenReportDoesNotExist_shouldCreateNewReport() {
-				// Arrange
-				var requestDto = new ReportRequestDto(testReview.getId(), "Оскорбление");
-				
-				when(reviewService.getReviewById(requestDto.reviewId())).thenReturn(testReview);
-				when(reportRepository.findByReviewAndReporter(requestDto.reviewId(), currentUser.getId()))
-						.thenReturn(Optional.empty());
-				when(userService.getReferenceById(currentUser.getId())).thenReturn(testUser);
-				
-				// Expected
-				Report expectedReportToSave = new Report();
-				expectedReportToSave.setReporter(testUser);
-				expectedReportToSave.setStatus("NEW");
-				expectedReportToSave.setReason(requestDto.reason());
-				expectedReportToSave.setReview(testReview);
-				
-				// Act
-				Report returnedReport = reportService.addOrUpdatedReport(requestDto, currentUser);
-				
-				// Assert
-				verify(reportRepository, times(1)).save(reportCaptor.capture());
-				Report savedReport = reportCaptor.getValue();
-				
-				assertThat(returnedReport).isSameAs(savedReport);
-				
-				assertThat(savedReport)
-						.usingRecursiveComparison()
-						.isEqualTo(expectedReportToSave);
-			}
-			
-			@Test
-			@DisplayName("Если жалоба существует, должен обновить причину и вернуть без явного вызова save")
-			void addOrUpdatedReport_whenReportAlreadyExists_shouldUpdateReason() {
-				// Arrange
-				var requestDto = new ReportRequestDto(testReview.getId(), "Новая причина: Спам");
-				
-				when(reviewService.getReviewById(requestDto.reviewId())).thenReturn(testReview);
-				when(reportRepository.findByReviewAndReporter(requestDto.reviewId(), currentUser.getId()))
-						.thenReturn(Optional.of(testReport));
-				
-				// Expected
-				expectedReport.setReason("Новая причина: Спам");
-				
-				// Act
-				Report returnedReport = reportService.addOrUpdatedReport(requestDto, currentUser);
-				
-				// Assert
-				assertThat(returnedReport)
-						.isSameAs(testReport)
-						.usingRecursiveComparison()
-						.isEqualTo(expectedReport);
-				
-				verify(userService, never()).getReferenceById(any());
-				verify(reportRepository, never()).save(any());
-			}
-		}
-		
+	@DisplayName("Тесты метода save")
+	class SaveTests {
 		
 		@Test
-		@DisplayName("Должен вернуть список всех жалоб от репозитория без изменений")
-		void getAll_shouldReturnListOfReports() {
+		@DisplayName("Если жалоба существует, должен обновить причину и вернуть DTO")
+		void save_whenReportExists_shouldUpdateReasonAndReturnDto() {
 			// Arrange
-			when(reportRepository.findAll()).thenReturn(List.of(testReport));
+			String newReason = "Обновленная причина жалобы";
+			ReportRequestDto request = new ReportRequestDto(testReview.getId(), newReason);
+			
+			when(reviewService.getEntityById(testReview.getId())).thenReturn(testReview);
+			when(reportRepository.findByReviewAndReporter(testReview.getId(), currentUser.getId()))
+					.thenReturn(Optional.of(testReport));
+			when(reportMapper.toDto(testReport)).thenReturn(mockReportResponseDto);
 			
 			// Act
-			List<Report> returnedReports = reportService.getAll();
+			ReportResponseDto result = reportService.save(request, currentUser);
 			
 			// Assert
-			assertThat(returnedReports)
-					.hasSize(1)
-					.contains(testReport);
+			assertThat(testReport.getReason()).isEqualTo(newReason);
+			assertThat(result).isSameAs(mockReportResponseDto);
 			
-			assertThat(returnedReports.getFirst())
+			verify(reportRepository, never()).save(any());
+			verify(userService, never()).getReferenceById(any());
+		}
+		
+		@Test
+		@DisplayName("Если жалоба не существует, должен создать, сохранить и вернуть DTO")
+		void save_whenReportDoesNotExist_shouldCreateSaveAndReturnDto() {
+			// Arrange
+			String newReason = "Новая жалоба на спам";
+			ReportRequestDto request = new ReportRequestDto(testReview.getId(), newReason);
+			
+			when(reviewService.getEntityById(testReview.getId())).thenReturn(testReview);
+			when(reportRepository.findByReviewAndReporter(testReview.getId(), currentUser.getId()))
+					.thenReturn(Optional.empty());
+			when(userService.getReferenceById(currentUser.getId())).thenReturn(testUser);
+			when(reportMapper.toDto(any(Report.class))).thenReturn(mockReportResponseDto);
+			
+			// Expected
+			Report expectedReport = new Report();
+			expectedReport.setReporter(testUser);
+			expectedReport.setReview(testReview);
+			expectedReport.setReason(newReason);
+			expectedReport.setStatus("NEW");
+			
+			// Act
+			ReportResponseDto result = reportService.save(request, currentUser);
+			
+			// Assert
+			verify(reportRepository).save(reportCaptor.capture());
+			Report savedReport = reportCaptor.getValue();
+			
+			assertThat(savedReport)
 					.usingRecursiveComparison()
+					.ignoringFields("id", "createdAt", "updatedAt") // Поля от БД/Hibernate
 					.isEqualTo(expectedReport);
-		}
-		
-		@Test
-		@DisplayName("Если жалоб нет, должен вернуть пустой список")
-		void getAll_whenNoReports_shouldReturnEmptyList() {
-			// Arrange
-			when(reportRepository.findAll()).thenReturn(Collections.emptyList());
 			
-			// Act
-			List<Report> returnedReports = reportService.getAll();
-			
-			// Assert
-			assertThat(returnedReports).isEmpty();
+			assertThat(result).isSameAs(mockReportResponseDto);
 		}
 	}
 	
@@ -173,7 +151,7 @@ class ReportServiceTest {
 	class ResolveTests {
 		
 		@Test
-		@DisplayName("Если жалобы не существует, должен выбросить ResourceNotFoundException")
+		@DisplayName("Если жалоба не найдена, должен выбросить ResourceNotFoundException")
 		void resolve_whenReportDoesNotExist_shouldThrowException() {
 			// Arrange
 			Long reportId = 999L;
@@ -184,32 +162,21 @@ class ReportServiceTest {
 					.isInstanceOf(ResourceNotFoundException.class);
 			
 			verify(reportRepository, never()).delete(any());
-			verify(reviewService, never()).deleteReview(any(), any());
 		}
 		
 		@Test
-		@DisplayName("Если действие DELETE_REVIEW, должен удалить жалобу и удалить связанный отзыв")
+		@DisplayName("Если действие DELETE_REVIEW, должен удалить жалобу и связанный с ней отзыв")
 		void resolve_whenActionIsDeleteReview_shouldDeleteReportAndReview() {
 			// Arrange
 			Long reportId = testReport.getId();
-			Long reviewId = testReview.getId();
-			
-			testReport.setReview(testReview);
-			expectedReport.setReview(ClassesExamples.getExistingReview());
-			
 			when(reportRepository.findById(reportId)).thenReturn(Optional.of(testReport));
 			
 			// Act
 			reportService.resolve(reportId, "DELETE_REVIEW", currentUser);
 			
 			// Assert
-			verify(reportRepository, times(1)).delete(reportCaptor.capture());
-			assertThat(reportCaptor.getValue())
-					.isSameAs(testReport)
-					.usingRecursiveComparison()
-					.isEqualTo(expectedReport);
-			
-			verify(reviewService, times(1)).deleteReview(reviewId, currentUser);
+			verify(reportRepository).delete(testReport);
+			verify(reviewService).delete(testReview.getId(), currentUser);
 		}
 		
 		@Test
@@ -223,17 +190,12 @@ class ReportServiceTest {
 			reportService.resolve(reportId, "REJECT_REPORT", currentUser);
 			
 			// Assert
-			verify(reportRepository, times(1)).delete(reportCaptor.capture());
-			assertThat(reportCaptor.getValue())
-					.isSameAs(testReport)
-					.usingRecursiveComparison()
-					.isEqualTo(expectedReport);
-			
-			verify(reviewService, never()).deleteReview(any(), any());
+			verify(reportRepository).delete(testReport);
+			verify(reviewService, never()).delete(any(), any());
 		}
 		
 		@Test
-		@DisplayName("Если действие неизвестно, не должен делать ничего")
+		@DisplayName("Если действие неизвестно, не должен делать никаких удалений")
 		void resolve_whenActionIsUnknown_shouldDoNothing() {
 			// Arrange
 			Long reportId = testReport.getId();
@@ -244,7 +206,60 @@ class ReportServiceTest {
 			
 			// Assert
 			verify(reportRepository, never()).delete(any());
-			verify(reviewService, never()).deleteReview(any(), any());
+			verify(reviewService, never()).delete(any(), any());
+		}
+	}
+	
+	@Nested
+	@DisplayName("Тесты метода getAll")
+	class GetAllTests {
+		
+		@Test
+		@DisplayName("Если жалобы существуют, должен вернуть список DTO")
+		void getAll_whenReportsExist_shouldReturnListOfDtos() {
+			// Arrange
+			when(reportRepository.findAll()).thenReturn(List.of(testReport));
+			when(reportMapper.toDto(testReport)).thenReturn(mockReportResponseDto);
+			
+			// Act
+			List<ReportResponseDto> result = reportService.getAll();
+			
+			// Assert
+			assertThat(result)
+					.hasSize(1)
+					.element(0).isSameAs(mockReportResponseDto);
+		}
+		
+		@Test
+		@DisplayName("Если жалоб нет, должен вернуть пустой список")
+		void getAll_whenNoReports_shouldReturnEmptyList() {
+			// Arrange
+			when(reportRepository.findAll()).thenReturn(Collections.emptyList());
+			
+			// Act
+			List<ReportResponseDto> result = reportService.getAll();
+			
+			// Assert
+			assertThat(result).isEmpty();
+		}
+	}
+	
+	@Nested
+	@DisplayName("Тесты метода getAllEntity")
+	class GetAllEntityTests {
+		
+		@Test
+		@DisplayName("Всегда возвращает результат из репозитория по ссылке")
+		void getAllEntity_always_shouldReturnListFromRepository() {
+			// Arrange
+			List<Report> expectedList = List.of(testReport);
+			when(reportRepository.findAll()).thenReturn(expectedList);
+			
+			// Act
+			List<Report> result = reportService.getAllEntity();
+			
+			// Assert
+			assertThat(result).isSameAs(expectedList);
 		}
 	}
 }

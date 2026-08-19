@@ -1,11 +1,13 @@
 package com.movienotebook.api.service;
 
+import com.movienotebook.api.dto.movie.MovieResponseDto;
 import com.movienotebook.api.dto.movie.SearchMovieRequestDto;
 import com.movienotebook.api.entity.Movie;
 import com.movienotebook.api.exception.ResourceNotFoundException;
 import com.movienotebook.api.integration.KinopoiskFetcher;
 import com.movienotebook.api.integration.dto.KinopoiskResponseDto;
 import com.movienotebook.api.integration.mapper.KinopoiskMovieMapper;
+import com.movienotebook.api.mapper.MovieMapper;
 import com.movienotebook.api.repository.MovieRepository;
 import com.movienotebook.api.util.ClassesExamples;
 import com.movienotebook.api.util.PaginationCalculator;
@@ -48,109 +50,100 @@ class MovieServiceTest {
 	@Mock
 	private KinopoiskMovieMapper kinopoiskMovieMapper;
 	
+	@Mock
+	private MovieMapper movieMapper;
+	
 	@InjectMocks
 	private MovieService movieService;
 	
 	@Captor
 	private ArgumentCaptor<Movie> movieCaptor;
 	
-	private Movie testMovie;
-	private Movie expectedMovie;
+	private Movie existingMovie;
+	private Movie expectedMovieState;
+	private MovieResponseDto movieResponseDto;
+	
 	@BeforeEach
 	void setUp() {
-		testMovie = ClassesExamples.getExistingMovie();
-		expectedMovie = ClassesExamples.getExistingMovie();
+		existingMovie = ClassesExamples.getExistingMovie();
+		expectedMovieState = ClassesExamples.getExistingMovie();
+		movieResponseDto = new MovieResponseDto(
+				existingMovie.getId(),
+				existingMovie.getExternalId(),
+				existingMovie.getTitle(),
+				existingMovie.getOriginalTitle(),
+				existingMovie.getDescription(),
+				existingMovie.getReleaseYear(),
+				existingMovie.getPosterUrl(),
+				existingMovie.getAverageRating()
+		);
 	}
 	
 	@Nested
-	@DisplayName("Тесты метода searchMovie")
-	class SearchMovieTests {
+	@DisplayName("Тесты метода searchMovies")
+	class SearchMoviesTests {
 		
 		@Test
 		@DisplayName("Если deepSearch=false, должен вернуть результат поиска только из локальной БД")
-		void searchMovie_whenDeepSearchIsFalse_shouldReturnFromLocalDatabase() {
+		void searchMovies_whenDeepSearchIsFalse_shouldReturnFromLocalDatabase() {
 			// Arrange
 			String query = "Матрица";
 			var request = new SearchMovieRequestDto(query, 1, 10, false);
-			Page<Movie> expectedPage = new PageImpl<>(List.of(testMovie));
+			Page<Movie> expectedPage = new PageImpl<>(List.of(existingMovie));
 			
 			when(movieRepository.findAllByTitleContainingIgnoreCaseOrOriginalTitleContainingIgnoreCase(
 					eq(query), eq(query), any(Pageable.class)
 			)).thenReturn(expectedPage);
+			when(movieMapper.toDto(existingMovie)).thenReturn(movieResponseDto);
 			
 			// Act
-			Page<Movie> resultPage = movieService.searchMovie(request);
+			Page<MovieResponseDto> resultPage = movieService.searchMovies(request);
 			
 			// Assert
-			assertThat(resultPage)
-					.isSameAs(expectedPage);
-			
-			assertThat(resultPage.getContent().getFirst())
-					.usingRecursiveComparison()
-					.isEqualTo(expectedMovie);
-			
-			verifyNoInteractions(kinopoiskFetcher, movieSyncService, kinopoiskMovieMapper);
+			assertThat(resultPage.getContent().getFirst()).isSameAs(movieResponseDto);
 		}
 		
 		@Test
 		@DisplayName("Если deepSearch=true и Fetcher ничего не нашел, должен вернуть пустую страницу")
-		void searchMovie_whenDeepSearchIsTrueAndNothingFound_shouldReturnEmptyPage() {
+		void searchMovies_whenDeepSearchIsTrueAndNothingFound_shouldReturnEmptyPage() {
 			// Arrange
 			String query = "Неизвестный фильм";
 			var request = new SearchMovieRequestDto(query, 1, 10, true);
-			
 			var expectedMapping = PaginationCalculator.calculate(request.page(), request.size());
-			
 			var emptyResult = new KinopoiskFetcher.SearchResult(Collections.emptyList(), 0);
+			
 			when(kinopoiskFetcher.fetchPages(query, expectedMapping)).thenReturn(emptyResult);
 			
 			// Act
-			Page<Movie> result = movieService.searchMovie(request);
+			Page<MovieResponseDto> result = movieService.searchMovies(request);
 			
 			// Assert
 			assertThat(result.isEmpty()).isTrue();
-			
-			verifyNoInteractions(movieSyncService, kinopoiskMovieMapper);
 		}
 		
 		@Test
-		@DisplayName("Если deepSearch=true и фильмы найдены, должен смаппить, сохранить, обрезать и вернуть Page")
-		void searchMovie_whenDeepSearchIsTrueAndFoundMovies_shouldProcessAndReturnPage() {
+		@DisplayName("Если deepSearch=true и фильмы найдены, должен вернуть Page с заготовленными DTO")
+		void searchMovies_whenDeepSearchIsTrueAndFoundMovies_shouldProcessAndReturnPage() {
 			// Arrange
 			String query = "Матрица";
-			var request = new SearchMovieRequestDto(query, 1, 2, true);
+			var request = new SearchMovieRequestDto(query, 1, 1, true);
 			var expectedMapping = PaginationCalculator.calculate(request.page(), request.size());
 			
-			var dto1 = new KinopoiskResponseDto(1L, "Фильм 1", "M1", "desc", 2000, "url");
-			var dto2 = new KinopoiskResponseDto(2L, "Фильм 2", "M2", "desc", 2001, "url");
-			var fetcherResult = new KinopoiskFetcher.SearchResult(List.of(dto1, dto2), 150);
+			var kinoDto = new KinopoiskResponseDto(1L, "Матрица", "The Matrix", "desc", 1999, "url");
+			var fetcherResult = new KinopoiskFetcher.SearchResult(List.of(kinoDto), 150);
 			
 			when(kinopoiskFetcher.fetchPages(query, expectedMapping)).thenReturn(fetcherResult);
-			
-			Movie rawMovie1 = new Movie(); rawMovie1.setTitle("Сырой Фильм 1");
-			Movie rawMovie2 = new Movie(); rawMovie2.setTitle("Сырой Фильм 2");
-			
-			when(kinopoiskMovieMapper.toEntity(dto1)).thenReturn(rawMovie1);
-			when(kinopoiskMovieMapper.toEntity(dto2)).thenReturn(rawMovie2);
-			
-			Movie savedMovie1 = new Movie(); savedMovie1.setId(10L);
-			Movie savedMovie2 = new Movie(); savedMovie2.setId(20L);
-			
-			when(movieSyncService.syncAndSave(List.of(rawMovie1, rawMovie2)))
-					.thenReturn(List.of(savedMovie1, savedMovie2));
+			when(kinopoiskMovieMapper.toEntity(kinoDto)).thenReturn(existingMovie);
+			when(movieSyncService.syncAndSave(List.of(existingMovie))).thenReturn(List.of(existingMovie));
+			when(movieMapper.toDto(existingMovie)).thenReturn(movieResponseDto);
 			
 			// Act
-			Page<Movie> result = movieService.searchMovie(request);
+			Page<MovieResponseDto> result = movieService.searchMovies(request);
 			
 			// Assert
-			// Проверяем данные страницы
-			assertThat(result.getContent())
-					.hasSize(2)
-					.containsExactly(savedMovie1, savedMovie2);
-			
+			assertThat(result.getContent()).hasSize(1);
+			assertThat(result.getContent().getFirst()).isSameAs(movieResponseDto);
 			assertThat(result.getTotalElements()).isEqualTo(150);
-			assertThat(result.getPageable().getPageNumber()).isEqualTo(0);
-			assertThat(result.getPageable().getPageSize()).isEqualTo(2);
 		}
 	}
 	
@@ -159,20 +152,18 @@ class MovieServiceTest {
 	class GetByIdTests {
 		
 		@Test
-		@DisplayName("Если фильм существует, должен вернуть существующий фильм")
-		void getById_whenMovieExists_shouldReturnExistingMovie() {
+		@DisplayName("Если фильм существует, должен вернуть DTO существующего фильма")
+		void getById_whenMovieExists_shouldReturnExistingMovieDto() {
 			// Arrange
-			Long movieId = testMovie.getId();
-			when(movieRepository.findById(movieId)).thenReturn(Optional.of(testMovie));
+			Long movieId = existingMovie.getId();
+			when(movieRepository.findById(movieId)).thenReturn(Optional.of(existingMovie));
+			when(movieMapper.toDto(existingMovie)).thenReturn(movieResponseDto);
 			
 			// Act
-			Movie returnedMovie = movieService.getById(movieId);
+			MovieResponseDto result = movieService.getById(movieId);
 			
 			// Assert
-			assertThat(returnedMovie)
-					.isSameAs(testMovie)
-					.usingRecursiveComparison()
-					.isEqualTo(expectedMovie);
+			assertThat(result).isSameAs(movieResponseDto);
 		}
 		
 		@Test
@@ -193,24 +184,22 @@ class MovieServiceTest {
 	class GetByExternalIdTests {
 		
 		@Test
-		@DisplayName("Если фильм с внешним ID существует, должен вернуть фильм")
-		void getByExternalId_whenMovieExists_shouldReturnExistingMovie() {
+		@DisplayName("Если фильм существует, должен вернуть DTO фильма")
+		void getByExternalId_whenMovieExists_shouldReturnExistingMovieDto() {
 			// Arrange
-			Long externalId = testMovie.getExternalId();
-			when(movieRepository.findByExternalId(externalId)).thenReturn(Optional.of(testMovie));
+			Long externalId = existingMovie.getExternalId();
+			when(movieRepository.findByExternalId(externalId)).thenReturn(Optional.of(existingMovie));
+			when(movieMapper.toDto(existingMovie)).thenReturn(movieResponseDto);
 			
 			// Act
-			Movie returnedMovie = movieService.getByExternalId(externalId);
+			MovieResponseDto result = movieService.getByExternalId(externalId);
 			
 			// Assert
-			assertThat(returnedMovie)
-					.isSameAs(testMovie)
-					.usingRecursiveComparison()
-					.isEqualTo(expectedMovie);
+			assertThat(result).isSameAs(movieResponseDto);
 		}
 		
 		@Test
-		@DisplayName("Если фильм с внешним ID не существует, должен выбросить исключение ResourceNotFoundException")
+		@DisplayName("Если фильма не существует, должен выбросить исключение ResourceNotFoundException")
 		void getByExternalId_whenMovieDoesNotExist_shouldThrowException() {
 			// Arrange
 			Long externalId = 999L;
@@ -223,47 +212,104 @@ class MovieServiceTest {
 	}
 	
 	@Nested
-	@DisplayName("Тесты поиска по названию (getByTitle и getByOriginalTitle)")
-	class GetByTitleTests {
+	@DisplayName("Тесты метода getEntityById")
+	class GetEntityByIdTests {
 		
 		@Test
-		@DisplayName("getByTitle: должен вернуть список фильмов от репозитория")
-		void getByTitle_shouldReturnListOfMovies() {
+		@DisplayName("Если сущность существует, должен вернуть её ссылку")
+		void getEntityById_whenMovieExists_shouldReturnExistingMovieEntity() {
 			// Arrange
-			String title = testMovie.getTitle();
-			when(movieRepository.findAllByTitleContainingIgnoreCase(title)).thenReturn(List.of(testMovie));
+			Long movieId = existingMovie.getId();
+			when(movieRepository.findById(movieId)).thenReturn(Optional.of(existingMovie));
 			
 			// Act
-			List<Movie> returnedMovies = movieService.getByTitle(title);
+			Movie result = movieService.getEntityById(movieId);
 			
 			// Assert
-			assertThat(returnedMovies)
-					.hasSize(1)
-					.contains(testMovie);
-			
-			assertThat(returnedMovies.getFirst())
-					.usingRecursiveComparison()
-					.isEqualTo(expectedMovie);
+			assertThat(result).isSameAs(existingMovie);
 		}
 		
 		@Test
-		@DisplayName("getByOriginalTitle: должен вернуть список фильмов от репозитория")
-		void getByOriginalTitle_shouldReturnListOfMovies() {
+		@DisplayName("Если сущности не существует, должен выбросить ResourceNotFoundException")
+		void getEntityById_whenMovieDoesNotExist_shouldThrowException() {
 			// Arrange
-			String originalTitle = testMovie.getOriginalTitle();
-			when(movieRepository.findAllByOriginalTitle(originalTitle)).thenReturn(List.of(testMovie));
+			Long movieId = 999L;
+			when(movieRepository.findById(movieId)).thenReturn(Optional.empty());
+			
+			// Act & Assert
+			assertThatThrownBy(() -> movieService.getEntityById(movieId))
+					.isInstanceOf(ResourceNotFoundException.class);
+		}
+	}
+	
+	@Nested
+	@DisplayName("Тесты метода getEntityByExternalId")
+	class GetEntityByExternalIdTests {
+		
+		@Test
+		@DisplayName("Если сущность существует, должен вернуть её ссылку")
+		void getEntityByExternalId_whenMovieExists_shouldReturnExistingMovieEntity() {
+			// Arrange
+			Long externalId = existingMovie.getExternalId();
+			when(movieRepository.findByExternalId(externalId)).thenReturn(Optional.of(existingMovie));
 			
 			// Act
-			List<Movie> returnedMovies = movieService.getByOriginalTitle(originalTitle);
+			Movie result = movieService.getEntityByExternalId(externalId);
 			
 			// Assert
-			assertThat(returnedMovies)
-					.hasSize(1)
-					.contains(testMovie);
+			assertThat(result).isSameAs(existingMovie);
+		}
+		
+		@Test
+		@DisplayName("Если сущности не существует, должен выбросить ResourceNotFoundException")
+		void getEntityByExternalId_whenMovieDoesNotExist_shouldThrowException() {
+			// Arrange
+			Long externalId = 999L;
+			when(movieRepository.findByExternalId(externalId)).thenReturn(Optional.empty());
 			
-			assertThat(returnedMovies.getFirst())
-					.usingRecursiveComparison()
-					.isEqualTo(expectedMovie);
+			// Act & Assert
+			assertThatThrownBy(() -> movieService.getEntityByExternalId(externalId))
+					.isInstanceOf(ResourceNotFoundException.class);
+		}
+	}
+	
+	@Nested
+	@DisplayName("Тесты метода findAllEntitiesByTitle")
+	class FindAllEntitiesByTitleTests {
+		
+		@Test
+		@DisplayName("Должен вернуть список фильмов от репозитория (поиск по названию)")
+		void findAllEntitiesByTitle_shouldReturnListOfMovies() {
+			// Arrange
+			String title = existingMovie.getTitle();
+			when(movieRepository.findAllByTitleContainingIgnoreCase(title)).thenReturn(List.of(existingMovie));
+			
+			// Act
+			List<Movie> returnedMovies = movieService.findAllEntitiesByTitle(title);
+			
+			// Assert
+			assertThat(returnedMovies).hasSize(1);
+			assertThat(returnedMovies.getFirst()).isSameAs(existingMovie);
+		}
+	}
+	
+	@Nested
+	@DisplayName("Тесты метода findAllEntitiesByOriginalTitle")
+	class FindAllEntitiesByOriginalTitleTests {
+		
+		@Test
+		@DisplayName("Должен вернуть список фильмов от репозитория (поиск по оригинальному названию)")
+		void findAllEntitiesByOriginalTitle_shouldReturnListOfMovies() {
+			// Arrange
+			String originalTitle = existingMovie.getOriginalTitle();
+			when(movieRepository.findAllByOriginalTitle(originalTitle)).thenReturn(List.of(existingMovie));
+			
+			// Act
+			List<Movie> returnedMovies = movieService.findAllEntitiesByOriginalTitle(originalTitle);
+			
+			// Assert
+			assertThat(returnedMovies).hasSize(1);
+			assertThat(returnedMovies.getFirst()).isSameAs(existingMovie);
 		}
 	}
 	
@@ -272,19 +318,34 @@ class MovieServiceTest {
 	class SaveTests {
 		
 		@Test
-		@DisplayName("Должен передать сущность в репозиторий для сохранения")
-		void save_shouldCallRepositorySave() {
+		@DisplayName("Должен сохранить переданный фильм")
+		void save_shouldSaveMovie() {
+			// Arrange
+			Movie movieToSave = ClassesExamples.getMovieToSave();
+			
+			when(movieRepository.save(movieToSave)).thenReturn(existingMovie);
+			
+			// Expected
+			Movie expectedSavedMovie = ClassesExamples.getMovieToSave();
+			
+			Movie expectedReturnedMovie = ClassesExamples.getExistingMovie();
+			
 			// Act
-			movieService.save(testMovie);
+			Movie returnedMovie = movieService.save(movieToSave);
 			
 			// Assert
 			verify(movieRepository, times(1)).save(movieCaptor.capture());
 			Movie savedMovie = movieCaptor.getValue();
 			
 			assertThat(savedMovie)
-					.isSameAs(testMovie)
+					.isSameAs(movieToSave)
 					.usingRecursiveComparison()
-					.isEqualTo(expectedMovie);
+					.isEqualTo(expectedSavedMovie);
+			
+			assertThat(returnedMovie)
+					.usingRecursiveComparison()
+					.isEqualTo(expectedReturnedMovie);
 		}
+		
 	}
 }

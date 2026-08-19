@@ -47,6 +47,17 @@ public class ClassesExamples {
 		return movie;
 	}
 	
+	public Movie getMovieToSave() {
+		Movie movie = new Movie();
+		movie.setExternalId(10L);
+		movie.setTitle("Название фильма");
+		movie.setOriginalTitle("Оригинальное название фильма");
+		movie.setDescription("Описание фильма");
+		movie.setReleaseYear(1995);
+		movie.setPosterUrl("Ссылка на постер");
+		return movie;
+	}
+	
 	public User getExistingUser() {
 		User user = new User();
 		user.setId(1L);
@@ -82,4 +93,21 @@ public class ClassesExamples {
 		return review;
 	}
 	
+	public Rating getExistingRating() {
+		Rating rating = new Rating();
+		rating.setId(1L);
+		rating.setScore(10);
+		rating.setMovie(new Movie());
+		rating.setUser(new User());
+		rating.setCreatedAt(currentTime);
+		return rating;
+	}
+	
+	public Rating getRatingToSave() {
+		Rating rating = new Rating();
+		rating.setScore(10);
+		rating.setMovie(new Movie());
+		rating.setUser(new User());
+		return rating;
+	}
 }
