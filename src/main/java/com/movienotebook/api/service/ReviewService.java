@@ -4,7 +4,6 @@ import com.movienotebook.api.dto.review.ReviewRequestDto;
 import com.movienotebook.api.dto.review.ReviewResponseDto;
 import com.movienotebook.api.entity.Movie;
 import com.movienotebook.api.entity.Review;
-import com.movienotebook.api.entity.Role;
 import com.movienotebook.api.entity.User;
 import com.movienotebook.api.exception.ResourceNotFoundException;
 import com.movienotebook.api.mapper.ReviewMapper;
@@ -12,6 +11,7 @@ import com.movienotebook.api.repository.ReportRepository;
 import com.movienotebook.api.repository.ReviewRepository;
 import com.movienotebook.api.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -53,17 +53,14 @@ public class ReviewService {
 	}
 	
 	@Transactional
-	public void delete(Long id, CustomUserDetails currentUser) {
+	public void delete(Long reviewId, CustomUserDetails currentUser) {
 		
-		Review review = reviewRepository.findById(id)
-				.orElseThrow(() -> new ResourceNotFoundException("Отзыв с идентификатором " + id + "не найден"));
+		Review review = reviewRepository.findById(reviewId)
+				.orElseThrow(() -> new ResourceNotFoundException("Отзыв с идентификатором " + reviewId + "не найден"));
 		
 		User author = review.getUser();
 		
-		// TODO Добавить в CustomUserDetails поле с ролью
-		User user = userService.getEntityById(currentUser.getId());
-		
-		if (author.getId().equals(currentUser.getId()) || user.getRole() == Role.ROLE_ADMIN) {
+		if (author.getId().equals(currentUser.getId()) || currentUser.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_ADMIN"))) {
 			reviewRepository.delete(review);
 		} else {
 			throw new org.springframework.security.access.AccessDeniedException("У вас нет прав на удаление этого отзыва");
