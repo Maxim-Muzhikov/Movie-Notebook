@@ -1,3 +1,8 @@
+app:
+  movies:
+    stale-threshold: 24H
+
+
 spring:
   config:
     import: optional:file:.env
