@@ -16,7 +16,7 @@ public class ClassesExamples {
 		Report report = new Report();
 		report.setId(1L);
 		report.setReason("Жалоба на плохой отзыв");
-		report.setStatus("NEW");
+		report.setStatus(ReportStatus.IN_PROGRESS);
 		report.setReview(new Review());
 		report.setReporter(new User());
 		report.setCreatedAt(currentTime.minusDays(1));
@@ -26,7 +26,7 @@ public class ClassesExamples {
 	public Report getReportToSave() {
 		Report report = new Report();
 		report.setReason("Жалоба на плохой отзыв");
-		report.setStatus("NEW");
+		report.setStatus(ReportStatus.NEW);
 		return report;
 	}
 	

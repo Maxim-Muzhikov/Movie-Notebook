@@ -3,8 +3,10 @@ package com.movienotebook.api.service;
 import com.movienotebook.api.dto.report.ReportRequestDto;
 import com.movienotebook.api.dto.report.ReportResponseDto;
 import com.movienotebook.api.entity.Report;
+import com.movienotebook.api.entity.ReportStatus;
 import com.movienotebook.api.entity.Review;
 import com.movienotebook.api.entity.User;
+import com.movienotebook.api.exception.NoSuchReportActionAvailableException;
 import com.movienotebook.api.exception.ResourceNotFoundException;
 import com.movienotebook.api.mapper.ReportMapper;
 import com.movienotebook.api.repository.ReportRepository;
@@ -79,7 +81,7 @@ class ReportServiceTest {
 				testReport.getReason(),
 				testReview.getContent(),
 				testUser.getUsername(),
-				testReport.getStatus()
+				testReport.getStatus().toString()
 		);
 	}
 	
@@ -128,7 +130,7 @@ class ReportServiceTest {
 			expectedReport.setReporter(testUser);
 			expectedReport.setReview(testReview);
 			expectedReport.setReason(newReason);
-			expectedReport.setStatus("NEW");
+			expectedReport.setStatus(ReportStatus.NEW);
 			
 			// Act
 			ReportResponseDto result = reportService.save(request, currentUser);
@@ -139,7 +141,6 @@ class ReportServiceTest {
 			
 			assertThat(savedReport)
 					.usingRecursiveComparison()
-					.ignoringFields("id", "createdAt", "updatedAt") // Поля от БД/Hibernate
 					.isEqualTo(expectedReport);
 			
 			assertThat(result).isSameAs(mockReportResponseDto);
@@ -151,7 +152,7 @@ class ReportServiceTest {
 	class ResolveTests {
 		
 		@Test
-		@DisplayName("Если жалоба не найдена, должен выбросить ResourceNotFoundException")
+		@DisplayName("Если жалоба не найдена, должен выбросить исключение ResourceNotFoundException")
 		void resolve_whenReportDoesNotExist_shouldThrowException() {
 			// Arrange
 			Long reportId = 999L;
@@ -165,6 +166,23 @@ class ReportServiceTest {
 		}
 		
 		@Test
+		@DisplayName("Если действие некорректно, должен выбросить исключение NoSuchReportActionAvailableException")
+		void resolve_whenActionInvalid_shouldThrowException() {
+			// Arrange
+			Long reportId = testReport.getId();
+			
+			when(reportRepository.findById(reportId)).thenReturn(Optional.of(testReport));
+			
+			// Act & Assert
+			assertThatThrownBy(() -> reportService.resolve(reportId, "INVALID_ACTION", currentUser))
+					.isInstanceOf(NoSuchReportActionAvailableException.class);
+			
+			// Assert
+			verify(reportRepository, never()).delete(any());
+			verify(reviewService, never()).delete(any(), any());
+		}
+		
+		@Test
 		@DisplayName("Если действие DELETE_REVIEW, должен удалить жалобу и связанный с ней отзыв")
 		void resolve_whenActionIsDeleteReview_shouldDeleteReportAndReview() {
 			// Arrange
@@ -175,8 +193,11 @@ class ReportServiceTest {
 			reportService.resolve(reportId, "DELETE_REVIEW", currentUser);
 			
 			// Assert
-			verify(reportRepository).delete(testReport);
+			verify(reportRepository, never()).delete(testReport);
 			verify(reviewService).delete(testReview.getId(), currentUser);
+			
+			assertThat(testReport.getStatus())
+					.isEqualTo(ReportStatus.RESOLVED);
 		}
 		
 		@Test
@@ -190,23 +211,29 @@ class ReportServiceTest {
 			reportService.resolve(reportId, "REJECT_REPORT", currentUser);
 			
 			// Assert
-			verify(reportRepository).delete(testReport);
+			verify(reportRepository, never()).delete(testReport);
 			verify(reviewService, never()).delete(any(), any());
+			
+			assertThat(testReport.getStatus())
+					.isEqualTo(ReportStatus.REJECTED);
 		}
 		
 		@Test
-		@DisplayName("Если действие неизвестно, не должен делать никаких удалений")
-		void resolve_whenActionIsUnknown_shouldDoNothing() {
+		@DisplayName("Если действие CLAIM_REPORT, должен установить нужный статус")
+		void resolve_whenActionIsClaimReport_shouldOnlyDeleteReport() {
 			// Arrange
 			Long reportId = testReport.getId();
 			when(reportRepository.findById(reportId)).thenReturn(Optional.of(testReport));
 			
 			// Act
-			reportService.resolve(reportId, "UNKNOWN_ACTION", currentUser);
+			reportService.resolve(reportId, "CLAIM_REPORT", currentUser);
 			
 			// Assert
-			verify(reportRepository, never()).delete(any());
+			verify(reportRepository, never()).delete(testReport);
 			verify(reviewService, never()).delete(any(), any());
+			
+			assertThat(testReport.getStatus())
+					.isEqualTo(ReportStatus.IN_PROGRESS);
 		}
 	}
 	
