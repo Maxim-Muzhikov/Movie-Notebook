@@ -6,6 +6,7 @@ import com.movienotebook.api.repository.MovieRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.OffsetDateTime;
@@ -16,6 +17,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class MovieSyncService {
 	private final MovieRepository movieRepository;
 	private final MovieMapper movieMapper;
@@ -23,7 +25,8 @@ public class MovieSyncService {
 	@Value("${app.movies.stale-threshold}")
 	private final Duration movieStaleThreshold = Duration.ofHours(24);
 	
-	List<Movie> syncAndSave(List<Movie> fetchedMovies) {
+	@Transactional
+	public List<Movie> syncAndSave(List<Movie> fetchedMovies) {
 		List<Long> externalIds = fetchedMovies
 				.stream()
 				.map(Movie::getExternalId)
