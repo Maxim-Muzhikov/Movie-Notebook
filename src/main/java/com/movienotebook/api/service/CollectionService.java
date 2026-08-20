@@ -24,8 +24,8 @@ import java.util.Objects;
 
 @Service
 
-// NOTE @RequiredArgsConstructor вместо @AllArgsConstructor, чтобы избежать ошибок компиляции при добавлении не-final поля
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class CollectionService {
 	
 	private final UserService userService;
@@ -34,19 +34,16 @@ public class CollectionService {
 	private final CollectionMovieRepository collectionMovieRepository;
 	private final CollectionMapper collectionMapper;
 	
-	@Transactional(readOnly = true)
 	public CollectionResponseDto getById(Long collectionId, CustomUserDetails currentUser) {
 		Collection collection = securedGetCollection(collectionId, currentUser);
 		return collectionMapper.toDto(collection);
 	}
 	
-	@Transactional(readOnly = true)
 	public CollectionWithMoviesResponseDto getWithMoviesById(Long collectionId, CustomUserDetails currentUser) {
 		Collection collection = securedGetCollection(collectionId, currentUser);
 		return collectionMapper.toWithMoviesDto(collection);
 	}
 	
-	@Transactional(readOnly = true)
 	public List<CollectionResponseDto> getByCurrentUser(CustomUserDetails currentUser) {
 		return collectionRepository.findAllByUserId(currentUser.getId())
 				.stream()

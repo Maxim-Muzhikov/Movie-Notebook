@@ -47,7 +47,8 @@ public class MovieService {
 		return makePage(pageContent, request, kinopoiskSearchResult.totalCount());
 	}
 	
-	private Page<MovieResponseDto> getMoviesFromLocalDb(SearchMovieRequestDto request) {
+	@Transactional(readOnly = true)
+	public Page<MovieResponseDto> getMoviesFromLocalDb(SearchMovieRequestDto request) {
 		Sort sort = Sort.by(
 				Sort.Order.desc("averageRating"),
 				Sort.Order.asc("id")
@@ -89,34 +90,40 @@ public class MovieService {
 		return page.map(movieMapper::toDto);
 	}
 	
+	@Transactional(readOnly = true)
 	public MovieResponseDto getById(Long id) {
 		return movieMapper.toDto(getEntityById(id));
 	}
 	
+	@Transactional(readOnly = true)
 	public MovieResponseDto getByExternalId(Long externalId) {
 		return  movieMapper.toDto(getEntityByExternalId(externalId));
 	}
 	
-	Movie getEntityById(Long id) {
+	@Transactional(readOnly = true)
+	public Movie getEntityById(Long id) {
 		return movieRepository.findById(id)
 				.orElseThrow(() -> new ResourceNotFoundException("Фильм с идентификатором " + id + " не найден"));
 	}
 	
-	Movie getEntityByExternalId(Long externalId) {
+	@Transactional(readOnly = true)
+	public Movie getEntityByExternalId(Long externalId) {
 		return movieRepository.findByExternalId(externalId)
 				.orElseThrow(() -> new ResourceNotFoundException("Фильм с внешним идентификатором " + externalId + " не найден"));
 	}
 	
-	List<Movie> findAllEntitiesByTitle(String title) {
+	@Transactional(readOnly = true)
+	public List<Movie> findAllEntitiesByTitle(String title) {
 		return movieRepository.findAllByTitleContainingIgnoreCase(title);
 	}
 	
-	List<Movie> findAllEntitiesByOriginalTitle(String title) {
+	@Transactional(readOnly = true)
+	public List<Movie> findAllEntitiesByOriginalTitle(String title) {
 		return movieRepository.findAllByOriginalTitle(title);
 	}
 	
 	@Transactional
-	Movie save(Movie movie) {
+	public Movie save(Movie movie) {
 		return movieRepository.save(movie);
 	}
 }

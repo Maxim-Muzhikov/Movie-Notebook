@@ -20,6 +20,7 @@ import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class ReviewService {
 	
 	private final ReviewRepository reviewRepository;
@@ -76,11 +77,11 @@ public class ReviewService {
 				.orElseThrow(() -> new ResourceNotFoundException("Отзыв с идентификатором " + id + " не найден")));
 	}
 	
-	List<Review> findAllEntityByMovieId(Long id) {
+	public List<Review> findAllEntityByMovieId(Long id) {
 		return reviewRepository.findAllByMovieId(id);
 	}
 	
-	Review getEntityById(Long id) {
+	public Review getEntityById(Long id) {
 		return reviewRepository.findById(id)
 				.orElseThrow(() -> new ResourceNotFoundException("Отзыв с идентификатором " + id + " не найден"));
 	}

@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class UserService {
 	
 	private final UserRepository userRepository;
@@ -34,22 +35,22 @@ public class UserService {
 		return userRepository.existsByEmail(email);
 	}
 	
-	User getEntityByUsername(String username) {
+	public User getEntityByUsername(String username) {
 		return userRepository.findByUsername(username)
 				.orElseThrow(() -> new ResourceNotFoundException("Пользователь с ником " + username + " не найден"));
 	}
 	
-	User getEntityById(Long id) {
+	public User getEntityById(Long id) {
 		return userRepository.findById(id)
 				.orElseThrow(() -> new ResourceNotFoundException("Пользователь с номером " + id + " не найден"));
 	}
 	
-	User getReferenceById(Long id) {
+	public User getReferenceById(Long id) {
 		return userRepository.getReferenceById(id);
 	}
 	
 	@Transactional
-	User save(User user) {
+	public User save(User user) {
 		return userRepository.save(user);
 	}
 }

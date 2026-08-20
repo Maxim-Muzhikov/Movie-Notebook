@@ -18,6 +18,7 @@ import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class ReportService {
 	
 	private final ReportRepository reportRepository;
@@ -66,7 +67,7 @@ public class ReportService {
 		return reportRepository.findAll().stream().map(reportMapper::toDto).toList();
 	}
 	
-	List<Report> getAllEntity() {
+	public List<Report> getAllEntity() {
 		return reportRepository.findAll();
 	}
 }
