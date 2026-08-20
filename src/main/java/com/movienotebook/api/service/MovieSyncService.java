@@ -4,6 +4,7 @@ import com.movienotebook.api.entity.Movie;
 import com.movienotebook.api.mapper.MovieMapper;
 import com.movienotebook.api.repository.MovieRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -19,8 +20,7 @@ public class MovieSyncService {
 	private final MovieRepository movieRepository;
 	private final MovieMapper movieMapper;
 	
-	// TODO Вынести в конфигурацию проекта
-	//@Value("${app.movies.stale-threshold}")
+	@Value("${app.movies.stale-threshold}")
 	private final Duration movieStaleThreshold = Duration.ofHours(24);
 	
 	List<Movie> syncAndSave(List<Movie> fetchedMovies) {
