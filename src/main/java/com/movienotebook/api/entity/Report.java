@@ -15,8 +15,9 @@ public class Report extends AbstractBase {
 	@Column(name = "reason")
 	private String reason;
 	
+	@Enumerated(EnumType.STRING)
 	@Column(name = "status")
-	private String status = "PENDING";
+	private ReportStatus status = ReportStatus.NEW;
 	
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "review_id")
