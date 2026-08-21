@@ -29,8 +29,6 @@ public class ReviewService {
 	private final ReviewMapper reviewMapper;
 	private final ReportRepository reportRepository;
 	
-	// TODO Проверить нет ли ошибок при добавлении отзыва, если один отзыв от пользователя уже был удален
-	// TODO Реализовать, что невозможно восстановить удаленный отзыв без удаления новосозданного или невозможно восстановить удаленный отзыв
 	@Transactional
 	public ReviewResponseDto save(ReviewRequestDto request, CustomUserDetails currentUser) {
 		
@@ -57,11 +55,12 @@ public class ReviewService {
 	public void delete(Long reviewId, CustomUserDetails currentUser) {
 		
 		Review review = reviewRepository.findById(reviewId)
-				.orElseThrow(() -> new ResourceNotFoundException("Отзыв с идентификатором " + reviewId + "не найден"));
+				.orElseThrow(() -> new ResourceNotFoundException("Отзыв с идентификатором " + reviewId + " не найден"));
 		
-		User author = review.getUser();
+		boolean isAuthor = review.getUser().getId().equals(currentUser.getId());
+		boolean isAdmin = currentUser.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_ADMIN"));
 		
-		if (author.getId().equals(currentUser.getId()) || currentUser.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_ADMIN"))) {
+		if (isAuthor || isAdmin) {
 			reviewRepository.delete(review);
 		} else {
 			throw new org.springframework.security.access.AccessDeniedException("У вас нет прав на удаление этого отзыва");
