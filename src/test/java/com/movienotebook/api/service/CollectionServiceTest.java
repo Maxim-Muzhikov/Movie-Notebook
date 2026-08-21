@@ -223,7 +223,7 @@ class CollectionServiceTest {
 			CollectionRequestDto request = new CollectionRequestDto("Новая коллекция", "Описание", true);
 			
 			when(collectionRepository.existsByNameAndUserId(request.name(), currentUser.getId())).thenReturn(false);
-			when(userService.getEntityById(currentUser.getId())).thenReturn(existingUser);
+			when(userService.getReferenceById(currentUser.getId())).thenReturn(existingUser);
 			when(collectionRepository.save(any(Collection.class))).thenReturn(existingCollection);
 			when(collectionMapper.toDto(existingCollection)).thenReturn(mockCollectionDto);
 			
