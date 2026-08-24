@@ -21,39 +21,49 @@ public class CollectionController {
 
 	private final CollectionService collectionService;
 	
-	@GetMapping("/{collectionId}")
-	public ResponseEntity<CollectionResponseDto> getCollection (
+	@PutMapping("/{collectionId}")
+	public ResponseEntity<CollectionResponseDto> editCollection (
 			@PathVariable Long collectionId,
+			@Valid @RequestBody CollectionRequestDto request,
 			@AuthenticationPrincipal CustomUserDetails userDetails) {
-		return ResponseEntity.ok(collectionService.getById(collectionId, userDetails));
+		
+		CollectionResponseDto response = collectionService.update(collectionId, request, userDetails);
+		return ResponseEntity.ok(response);
 	}
 	
-	@GetMapping("/{collectionId}/movies")
-	public ResponseEntity<CollectionWithMoviesResponseDto> getCollectionWithMovies (
+	@GetMapping("/{collectionId}")
+	public ResponseEntity<CollectionWithMoviesResponseDto> getCollection (
 			@PathVariable Long collectionId,
 			@AuthenticationPrincipal CustomUserDetails userDetails) {
-		return ResponseEntity.ok(collectionService.getWithMoviesById(collectionId, userDetails));
+		
+		CollectionWithMoviesResponseDto response = collectionService.getWithMoviesById(collectionId, userDetails);
+		return ResponseEntity.ok(response);
 	}
 	
 	@GetMapping
 	public ResponseEntity<List<CollectionResponseDto>> getMyCollections (
 			@AuthenticationPrincipal CustomUserDetails userDetails) {
-		return ResponseEntity.ok(collectionService.getByCurrentUser(userDetails));
+		
+		List<CollectionResponseDto> response = collectionService.getByCurrentUser(userDetails);
+		return ResponseEntity.ok(response);
 	}
 	
 	@PostMapping
 	public ResponseEntity<CollectionResponseDto> createCollection (
 			@Valid @RequestBody CollectionRequestDto request,
 			@AuthenticationPrincipal CustomUserDetails userDetails) {
-		return ResponseEntity.status(HttpStatus.CREATED).body(collectionService.create(request, userDetails));
+		
+		CollectionResponseDto response = collectionService.create(request, userDetails);
+		return ResponseEntity.status(HttpStatus.CREATED).body(response);
 	}
 	
 	@DeleteMapping("/{collectionId}")
 	public ResponseEntity<Void> deleteCollection (
 			@PathVariable Long collectionId,
 			@AuthenticationPrincipal CustomUserDetails userDetails) {
+		
 		collectionService.delete(collectionId, userDetails);
-		return ResponseEntity.ok().build();
+		return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
 	}
 
 	@PostMapping("/{collectionId}/movies/{movieId}")
@@ -61,6 +71,7 @@ public class CollectionController {
 			@PathVariable Long collectionId,
 			@PathVariable Long movieId,
 			@AuthenticationPrincipal CustomUserDetails userDetails) {
+		
 		collectionService.addMovie(collectionId, movieId, userDetails);
 		return ResponseEntity.ok().build();
 	}
@@ -70,7 +81,8 @@ public class CollectionController {
 			@PathVariable Long collectionId,
 			@PathVariable Long movieId,
 			@AuthenticationPrincipal CustomUserDetails userDetails) {
+		
 		collectionService.removeMovie(collectionId, movieId, userDetails);
-		return ResponseEntity.ok().build();
+		return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
 	}
 }
