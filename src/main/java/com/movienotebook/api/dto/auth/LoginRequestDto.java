@@ -9,7 +9,7 @@ public record LoginRequestDto(
 		String username,
 		
 		@NotBlank(message = "Пароль не может быть пустым")
-		@Size(min = 8, message = "Пароль должен содержать минимум 8 символов")
+		@Size(min = 8, max = 50, message = "Пароль должен содержать от 8 до 50 символов")
 		String password
 ) {
 }

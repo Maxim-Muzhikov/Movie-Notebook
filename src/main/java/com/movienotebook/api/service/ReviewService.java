@@ -10,6 +10,7 @@ import com.movienotebook.api.mapper.ReviewMapper;
 import com.movienotebook.api.repository.ReportRepository;
 import com.movienotebook.api.repository.ReviewRepository;
 import com.movienotebook.api.security.CustomUserDetails;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Service;
@@ -30,9 +31,9 @@ public class ReviewService {
 	private final ReportRepository reportRepository;
 	
 	@Transactional
-	public ReviewResponseDto save(ReviewRequestDto request, CustomUserDetails currentUser) {
+	public ReviewResponseDto save(Long movieId, ReviewRequestDto request, CustomUserDetails currentUser) {
 		
-		Movie movie = movieService.getEntityById(request.movieId());
+		Movie movie = movieService.getEntityById(movieId);
 		
 		Optional<Review> existingReview = reviewRepository.findByMovieIdAndUserId(movie.getId(), currentUser.getId());
 		
@@ -83,5 +84,16 @@ public class ReviewService {
 	public Review getEntityById(Long id) {
 		return reviewRepository.findById(id)
 				.orElseThrow(() -> new ResourceNotFoundException("Отзыв с идентификатором " + id + " не найден"));
+	}
+	
+	@Transactional
+	public ReviewResponseDto update(Long reviewId, @Valid ReviewRequestDto request, CustomUserDetails currentUser) {
+		
+		Review existingReview = reviewRepository.findById(reviewId)
+				.orElseThrow(() -> new ResourceNotFoundException("Отзыв с идентификатором " + reviewId + " не найден"));
+		
+		existingReview.setContent(request.content());
+		
+		return reviewMapper.toDto(existingReview);
 	}
 }

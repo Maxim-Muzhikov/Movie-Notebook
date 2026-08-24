@@ -6,6 +6,7 @@ import com.movienotebook.api.security.CustomUserDetails;
 import com.movienotebook.api.service.ReviewService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -17,24 +18,24 @@ public class ReviewController {
 	
 	private final ReviewService reviewService;
 	
-	@PostMapping
-	public ResponseEntity<ReviewResponseDto> reviewMovie(
+	@PutMapping("/{reviewId}")
+	public ResponseEntity<ReviewResponseDto> updateReview (
+			@PathVariable Long reviewId,
 			@Valid @RequestBody ReviewRequestDto request,
 			@AuthenticationPrincipal CustomUserDetails userDetails) {
 		
-		ReviewResponseDto reviewResponseDto = reviewService.save(request, userDetails);
-		
-		return ResponseEntity.ok(reviewResponseDto);
+		ReviewResponseDto response = reviewService.update(reviewId, request, userDetails);
+		return ResponseEntity.ok(response);
 	}
 	
-	@DeleteMapping("/{id}")
+	@DeleteMapping("/{reviewId}")
 	public ResponseEntity<Void> deleteReview (
-			@PathVariable Long id,
+			@PathVariable Long reviewId,
 			@AuthenticationPrincipal CustomUserDetails userDetails) {
 		
-		reviewService.delete(id, userDetails);
+		reviewService.delete(reviewId, userDetails);
 		
-		return ResponseEntity.ok().build();
+		return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
 	}
 	
 }

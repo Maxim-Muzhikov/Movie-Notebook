@@ -28,9 +28,9 @@ public class RatingService {
 	
 	// TODO: Внедрить инкрементальное среднее
 	@Transactional
-	public RatingResponseDto save(RatingRequestDto request, CustomUserDetails currentUser) {
+	public RatingResponseDto save(Long movieId, RatingRequestDto request, CustomUserDetails currentUser) {
 		
-		Movie movie = movieService.getEntityById(request.movieId());
+		Movie movie = movieService.getEntityById(movieId);
 		
 		Optional<Rating> existingRating = ratingRepository.findByMovieIdAndUserId(movie.getId(), currentUser.getId());
 		
