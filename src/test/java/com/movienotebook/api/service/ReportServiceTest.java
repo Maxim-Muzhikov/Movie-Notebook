@@ -99,14 +99,12 @@ class ReportServiceTest {
 			when(reviewService.getEntityById(testReview.getId())).thenReturn(testReview);
 			when(reportRepository.findByReviewAndReporter(testReview.getId(), currentUser.getId()))
 					.thenReturn(Optional.of(testReport));
-			when(reportMapper.toDto(testReport)).thenReturn(mockReportResponseDto);
 			
 			// Act
-			ReportResponseDto result = reportService.save(request, currentUser);
+			reportService.save(request, currentUser);
 			
 			// Assert
 			assertThat(testReport.getReason()).isEqualTo(newReason);
-			assertThat(result).isSameAs(mockReportResponseDto);
 			
 			verify(reportRepository, never()).save(any());
 			verify(userService, never()).getReferenceById(any());
@@ -123,7 +121,6 @@ class ReportServiceTest {
 			when(reportRepository.findByReviewAndReporter(testReview.getId(), currentUser.getId()))
 					.thenReturn(Optional.empty());
 			when(userService.getReferenceById(currentUser.getId())).thenReturn(testUser);
-			when(reportMapper.toDto(any(Report.class))).thenReturn(mockReportResponseDto);
 			
 			// Expected
 			Report expectedReport = new Report();
@@ -133,7 +130,7 @@ class ReportServiceTest {
 			expectedReport.setStatus(ReportStatus.NEW);
 			
 			// Act
-			ReportResponseDto result = reportService.save(request, currentUser);
+			reportService.save(request, currentUser);
 			
 			// Assert
 			verify(reportRepository).save(reportCaptor.capture());
@@ -142,8 +139,6 @@ class ReportServiceTest {
 			assertThat(savedReport)
 					.usingRecursiveComparison()
 					.isEqualTo(expectedReport);
-			
-			assertThat(result).isSameAs(mockReportResponseDto);
 		}
 	}
 	

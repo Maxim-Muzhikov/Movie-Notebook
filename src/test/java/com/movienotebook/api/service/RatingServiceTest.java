@@ -83,16 +83,17 @@ class RatingServiceTest {
 		@DisplayName("Если оценка не существует, должен создать новую, обновить рейтинг фильма и вернуть DTO")
 		void save_whenRatingDoesNotExist_shouldCreateNewRecalculateAverageAndReturnDto() {
 			// Arrange
-			var requestDto = new RatingRequestDto(existingMovie.getId(), 8);
+			Long movieId = existingMovie.getId();
+			var requestDto = new RatingRequestDto(8);
 			Double rawCalculatedAverage = 8.0;
 			BigDecimal newAverageRating = new BigDecimal("8.00");
 			RatingResponseDto expectedDto = new RatingResponseDto(newAverageRating);
 			
-			when(movieService.getEntityById(requestDto.movieId())).thenReturn(existingMovie);
-			when(ratingRepository.findByMovieIdAndUserId(existingMovie.getId(), currentUser.getId()))
+			when(movieService.getEntityById(movieId)).thenReturn(existingMovie);
+			when(ratingRepository.findByMovieIdAndUserId(movieId, currentUser.getId()))
 					.thenReturn(Optional.empty());
 			when(userService.getReferenceById(currentUser.getId())).thenReturn(existingUser);
-			when(ratingRepository.calculateAverageScoreByMovieId(existingMovie.getId())).thenReturn(rawCalculatedAverage);
+			when(ratingRepository.calculateAverageScoreByMovieId(movieId)).thenReturn(rawCalculatedAverage);
 			when(ratingMapper.toDto(newAverageRating)).thenReturn(expectedDto);
 			
 			// Expected
@@ -102,11 +103,11 @@ class RatingServiceTest {
 			expectedNewRating.setScore(8);
 			
 			Movie expectedMovie = ClassesExamples.getExistingMovie();
-			expectedMovie.setId(existingMovie.getId());
+			expectedMovie.setId(movieId);
 			expectedMovie.setAverageRating(newAverageRating);
 			
 			// Act
-			RatingResponseDto actualDto = ratingService.save(requestDto, currentUser);
+			RatingResponseDto actualDto = ratingService.save(movieId, requestDto, currentUser);
 			
 			// Assert
 			assertThat(actualDto).isSameAs(expectedDto);
@@ -128,15 +129,16 @@ class RatingServiceTest {
 		@DisplayName("Если оценка существует, должен обновить её, округлить средний рейтинг (HALF_UP) и вернуть DTO")
 		void save_whenRatingAlreadyExists_shouldUpdateExistingRecalculateAverageAndReturnDto() {
 			// Arrange
-			var requestDto = new RatingRequestDto(existingMovie.getId(), 9);
+			Long movieId = existingMovie.getId();
+			var requestDto = new RatingRequestDto(9);
 			Double rawCalculatedAverage = 8.456;
 			BigDecimal newAverageRating = new BigDecimal("8.46");
 			RatingResponseDto expectedDto = new RatingResponseDto(newAverageRating);
 			
-			when(movieService.getEntityById(requestDto.movieId())).thenReturn(existingMovie);
-			when(ratingRepository.findByMovieIdAndUserId(existingMovie.getId(), currentUser.getId()))
+			when(movieService.getEntityById(movieId)).thenReturn(existingMovie);
+			when(ratingRepository.findByMovieIdAndUserId(movieId, currentUser.getId()))
 					.thenReturn(Optional.of(existingRating));
-			when(ratingRepository.calculateAverageScoreByMovieId(existingMovie.getId())).thenReturn(rawCalculatedAverage);
+			when(ratingRepository.calculateAverageScoreByMovieId(movieId)).thenReturn(rawCalculatedAverage);
 			when(ratingMapper.toDto(newAverageRating)).thenReturn(expectedDto);
 			
 			// Expected
@@ -144,11 +146,11 @@ class RatingServiceTest {
 			expectedUpdatedRating.setScore(9);
 			
 			Movie expectedMovie = ClassesExamples.getExistingMovie();
-			expectedMovie.setId(existingMovie.getId());
+			expectedMovie.setId(movieId);
 			expectedMovie.setAverageRating(newAverageRating);
 			
 			// Act
-			RatingResponseDto actualDto = ratingService.save(requestDto, currentUser);
+			RatingResponseDto actualDto = ratingService.save(movieId, requestDto, currentUser);
 			
 			// Assert
 			assertThat(actualDto).isSameAs(expectedDto);

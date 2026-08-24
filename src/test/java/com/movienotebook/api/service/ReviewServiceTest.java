@@ -95,15 +95,16 @@ class ReviewServiceTest {
 		void save_whenReviewExists_shouldUpdateContentAndReturnDto() {
 			// Arrange
 			String newContent = "Обновленный контент";
-			ReviewRequestDto request = new ReviewRequestDto(testMovie.getId(), newContent);
+			Long movieId = testMovie.getId();
+			ReviewRequestDto request = new ReviewRequestDto(newContent);
 			
-			when(movieService.getEntityById(testMovie.getId())).thenReturn(testMovie);
-			when(reviewRepository.findByMovieIdAndUserId(testMovie.getId(), currentUser.getId()))
+			when(movieService.getEntityById(movieId)).thenReturn(testMovie);
+			when(reviewRepository.findByMovieIdAndUserId(movieId, currentUser.getId()))
 					.thenReturn(Optional.of(testReview));
 			when(reviewMapper.toDto(testReview)).thenReturn(mockReviewResponseDto);
 			
 			// Act
-			ReviewResponseDto result = reviewService.save(request, currentUser);
+			ReviewResponseDto result = reviewService.save(movieId, request, currentUser);
 			
 			// Assert
 			verify(reviewRepository).save(reviewCaptor.capture());
@@ -124,10 +125,11 @@ class ReviewServiceTest {
 		void save_whenReviewDoesNotExist_shouldCreateNewReviewAndReturnDto() {
 			// Arrange
 			String newContent = "Новый отличный отзыв";
-			ReviewRequestDto request = new ReviewRequestDto(testMovie.getId(), newContent);
+			Long movieId = testMovie.getId();
+			ReviewRequestDto request = new ReviewRequestDto(newContent);
 			
-			when(movieService.getEntityById(testMovie.getId())).thenReturn(testMovie);
-			when(reviewRepository.findByMovieIdAndUserId(testMovie.getId(), currentUser.getId()))
+			when(movieService.getEntityById(movieId)).thenReturn(testMovie);
+			when(reviewRepository.findByMovieIdAndUserId(movieId, currentUser.getId()))
 					.thenReturn(Optional.empty());
 			when(userService.getReferenceById(currentUser.getId())).thenReturn(testUser);
 			when(reviewMapper.toDto(any(Review.class))).thenReturn(mockReviewResponseDto);
@@ -139,7 +141,7 @@ class ReviewServiceTest {
 			expectedState.setContent(newContent);
 			
 			// Act
-			ReviewResponseDto result = reviewService.save(request, currentUser);
+			ReviewResponseDto result = reviewService.save(movieId, request, currentUser);
 			
 			// Assert
 			verify(reviewRepository).save(reviewCaptor.capture());
