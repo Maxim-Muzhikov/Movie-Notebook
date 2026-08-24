@@ -14,6 +14,7 @@ import com.movienotebook.api.mapper.CollectionMapper;
 import com.movienotebook.api.repository.CollectionMovieRepository;
 import com.movienotebook.api.repository.CollectionRepository;
 import com.movienotebook.api.security.CustomUserDetails;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -132,4 +133,21 @@ public class CollectionService {
 		return newCollectionMovie;
 	}
 	
+	@Transactional
+	public CollectionResponseDto update(Long collectionId, @Valid CollectionRequestDto request, CustomUserDetails currentUser) {
+		
+		Collection existingCollection = collectionRepository.findById(collectionId)
+				.orElseThrow(() -> new ResourceNotFoundException("Коллекции с номером " + collectionId + " не найдено"));
+		
+		existingCollection.setName(request.name());
+		existingCollection.setDescription(request.description());
+		existingCollection.setPublic(request.isPublic());
+		
+		return collectionMapper.toDto(existingCollection);
+	}
+	
+	public List<CollectionResponseDto> getPublic(Long userId) {
+		
+		return null;
+	}
 }

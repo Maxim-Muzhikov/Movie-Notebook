@@ -29,7 +29,7 @@ public class ReportService {
 	private final ReportMapper reportMapper;
 	
 	@Transactional
-	public ReportResponseDto save(ReportRequestDto request, CustomUserDetails currentUser) {
+	public void save(ReportRequestDto request, CustomUserDetails currentUser) {
 		
 		Review review = reviewService.getEntityById(request.reviewId());
 		
@@ -37,7 +37,6 @@ public class ReportService {
 		
 		if (existingReport.isPresent()) {
 			existingReport.get().setReason(request.reason());
-			return reportMapper.toDto(existingReport.get());
 		} else {
 			User user = userService.getReferenceById(currentUser.getId());
 			Report newReport = new Report();
@@ -46,7 +45,6 @@ public class ReportService {
 			newReport.setReason(request.reason());
 			newReport.setStatus(ReportStatus.NEW);
 			reportRepository.save(newReport);
-			return reportMapper.toDto(newReport);
 		}
 	}
 	
