@@ -12,12 +12,10 @@ public record RegisterRequestDto (
 		String email,
 		
 		@NotBlank(message = "Пароль не может быть пустым")
-		@Size(min = 8, message = "Пароль должен содержать минимум 8 символов")
+		@Size(min = 8, max = 50, message = "Пароль должен содержать от 8 до 50 символов")
 		String password,
 		
 		@NotNull(message = "Необходимо передать статус согласия с политикой")
-		@AssertTrue(message = "Вы должны принять пользовательское соглашение (152-ФЗ)")
+		@AssertTrue(message = "Вы должны принять пользовательское соглашение")
 		Boolean agreementAccepted
-){
-
-}
+) { }

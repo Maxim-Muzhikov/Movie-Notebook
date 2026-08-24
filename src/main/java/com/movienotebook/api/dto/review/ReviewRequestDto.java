@@ -1,13 +1,11 @@
 package com.movienotebook.api.dto.review;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 public record ReviewRequestDto(
-		@NotNull(message = "ID фильма не может быть пустым")
-		Long movieId,
-		
 		@NotBlank(message = "Содержание отзыва не может быть пустым")
+		@Size(min = 8, max = 1000, message = "Длина отзыва должна быть не менее 8 и не более 1000 символов")
 		String content
 ) {
 }

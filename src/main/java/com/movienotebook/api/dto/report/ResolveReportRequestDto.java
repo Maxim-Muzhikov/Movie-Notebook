@@ -5,7 +5,7 @@ import jakarta.validation.constraints.Pattern;
 
 public record ResolveReportRequestDto(
 		@NotBlank(message = "Действие не может быть пустым")
-		@Pattern(regexp = "^(DELETE_REVIEW|REJECT_REPORT)$", message = "Недопустимое действие. Разрешено: DELETE_REVIEW, REJECT_REPORT")
+		@Pattern(regexp = "^(DELETE_REVIEW|REJECT_REPORT|CLAIM_REPORT)$", message = "Недопустимое действие. Разрешено: DELETE_REVIEW, REJECT_REPORT, CLAIM_REPORT")
 		String action
 ) {
 }
