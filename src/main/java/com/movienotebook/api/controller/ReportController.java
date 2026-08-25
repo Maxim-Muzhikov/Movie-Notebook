@@ -43,7 +43,7 @@ public class ReportController {
 			@Valid @RequestBody ResolveReportRequestDto request,
 			@AuthenticationPrincipal CustomUserDetails userDetails) {
 		
-		reportService.resolve(id, request.action(), userDetails);
+		reportService.resolve(id, request, userDetails);
 		return ResponseEntity.ok().build();
 	}
 }
