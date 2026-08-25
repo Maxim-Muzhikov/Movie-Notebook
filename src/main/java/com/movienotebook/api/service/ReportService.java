@@ -2,11 +2,11 @@ package com.movienotebook.api.service;
 
 import com.movienotebook.api.dto.report.ReportRequestDto;
 import com.movienotebook.api.dto.report.ReportResponseDto;
+import com.movienotebook.api.dto.report.ResolveReportRequestDto;
 import com.movienotebook.api.entity.Report;
-import com.movienotebook.api.entity.ReportStatus;
 import com.movienotebook.api.entity.Review;
 import com.movienotebook.api.entity.User;
-import com.movienotebook.api.exception.NoSuchReportActionAvailableException;
+import com.movienotebook.api.entity.enums.ReportStatus;
 import com.movienotebook.api.exception.ResourceNotFoundException;
 import com.movienotebook.api.mapper.ReportMapper;
 import com.movienotebook.api.repository.ReportRepository;
@@ -49,25 +49,19 @@ public class ReportService {
 	}
 	
 	@Transactional
-	public void resolve(Long reportId, String action, CustomUserDetails currentUser) {
+	public void resolve(Long reportId, ResolveReportRequestDto request, CustomUserDetails currentUser) {
 		
 		Report report = reportRepository.findById(reportId)
-				.orElseThrow(() -> new ResourceNotFoundException("Жалоба с номером " + reportId + " не найдена"));
+				.orElseThrow(() -> new ResourceNotFoundException("Жалоба c номером " + reportId + " не найдена"));
 		
-		switch (action) {
-			case "DELETE_REVIEW":
+		switch (request.action()) {
+			case DELETE_REVIEW -> {
 				report.setStatus(ReportStatus.RESOLVED);
 				reviewService.delete(report.getReview().getId(), currentUser);
-				break;
-			case "REJECT_REPORT":
-				report.setStatus(ReportStatus.REJECTED);
-				break;
-			case "CLAIM_REPORT":
-				report.setStatus(ReportStatus.IN_PROGRESS);
-				break;
-			default:
-				throw new NoSuchReportActionAvailableException("Действия над жалобой \"" + action + "\" не существует");
 			}
+			case REJECT_REPORT -> report.setStatus(ReportStatus.REJECTED);
+			case CLAIM_REPORT -> report.setStatus(ReportStatus.IN_PROGRESS);
+		}
 	}
 	
 	public List<ReportResponseDto> getAll() {

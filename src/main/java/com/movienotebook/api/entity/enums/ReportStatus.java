@@ -1,4 +1,4 @@
-package com.movienotebook.api.entity;
+package com.movienotebook.api.entity.enums;
 
 public enum ReportStatus {
 	NEW,

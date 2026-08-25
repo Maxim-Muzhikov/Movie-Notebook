@@ -1,7 +1,7 @@
 package com.movienotebook.api.repository;
 
-import com.movienotebook.api.entity.Role;
 import com.movienotebook.api.entity.User;
+import com.movienotebook.api.entity.enums.Role;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

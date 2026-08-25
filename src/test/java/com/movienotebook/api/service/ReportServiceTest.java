@@ -2,11 +2,11 @@ package com.movienotebook.api.service;
 
 import com.movienotebook.api.dto.report.ReportRequestDto;
 import com.movienotebook.api.dto.report.ReportResponseDto;
+import com.movienotebook.api.dto.report.ResolveReportRequestDto;
 import com.movienotebook.api.entity.Report;
-import com.movienotebook.api.entity.ReportStatus;
 import com.movienotebook.api.entity.Review;
 import com.movienotebook.api.entity.User;
-import com.movienotebook.api.exception.NoSuchReportActionAvailableException;
+import com.movienotebook.api.entity.enums.ReportStatus;
 import com.movienotebook.api.exception.ResourceNotFoundException;
 import com.movienotebook.api.mapper.ReportMapper;
 import com.movienotebook.api.repository.ReportRepository;
@@ -28,6 +28,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+import static com.movienotebook.api.entity.enums.ReportAction.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -151,30 +152,15 @@ class ReportServiceTest {
 		void resolve_whenReportDoesNotExist_shouldThrowException() {
 			// Arrange
 			Long reportId = 999L;
+			var request = new ResolveReportRequestDto(DELETE_REVIEW);
+			
 			when(reportRepository.findById(reportId)).thenReturn(Optional.empty());
 			
 			// Act & Assert
-			assertThatThrownBy(() -> reportService.resolve(reportId, "DELETE_REVIEW", currentUser))
+			assertThatThrownBy(() -> reportService.resolve(reportId, request, currentUser))
 					.isInstanceOf(ResourceNotFoundException.class);
 			
 			verify(reportRepository, never()).delete(any());
-		}
-		
-		@Test
-		@DisplayName("Если действие некорректно, должен выбросить исключение NoSuchReportActionAvailableException")
-		void resolve_whenActionInvalid_shouldThrowException() {
-			// Arrange
-			Long reportId = testReport.getId();
-			
-			when(reportRepository.findById(reportId)).thenReturn(Optional.of(testReport));
-			
-			// Act & Assert
-			assertThatThrownBy(() -> reportService.resolve(reportId, "INVALID_ACTION", currentUser))
-					.isInstanceOf(NoSuchReportActionAvailableException.class);
-			
-			// Assert
-			verify(reportRepository, never()).delete(any());
-			verify(reviewService, never()).delete(any(), any());
 		}
 		
 		@Test
@@ -182,10 +168,12 @@ class ReportServiceTest {
 		void resolve_whenActionIsDeleteReview_shouldDeleteReportAndReview() {
 			// Arrange
 			Long reportId = testReport.getId();
+			var request = new ResolveReportRequestDto(DELETE_REVIEW);
+			
 			when(reportRepository.findById(reportId)).thenReturn(Optional.of(testReport));
 			
 			// Act
-			reportService.resolve(reportId, "DELETE_REVIEW", currentUser);
+			reportService.resolve(reportId, request, currentUser);
 			
 			// Assert
 			verify(reportRepository, never()).delete(testReport);
@@ -200,10 +188,12 @@ class ReportServiceTest {
 		void resolve_whenActionIsRejectReport_shouldOnlyDeleteReport() {
 			// Arrange
 			Long reportId = testReport.getId();
+			var request = new ResolveReportRequestDto(REJECT_REPORT);
+			
 			when(reportRepository.findById(reportId)).thenReturn(Optional.of(testReport));
 			
 			// Act
-			reportService.resolve(reportId, "REJECT_REPORT", currentUser);
+			reportService.resolve(reportId, request, currentUser);
 			
 			// Assert
 			verify(reportRepository, never()).delete(testReport);
@@ -218,10 +208,12 @@ class ReportServiceTest {
 		void resolve_whenActionIsClaimReport_shouldOnlyDeleteReport() {
 			// Arrange
 			Long reportId = testReport.getId();
+			var request = new ResolveReportRequestDto(CLAIM_REPORT);
+			
 			when(reportRepository.findById(reportId)).thenReturn(Optional.of(testReport));
 			
 			// Act
-			reportService.resolve(reportId, "CLAIM_REPORT", currentUser);
+			reportService.resolve(reportId, request, currentUser);
 			
 			// Assert
 			verify(reportRepository, never()).delete(testReport);
