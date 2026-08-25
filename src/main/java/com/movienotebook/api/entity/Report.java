@@ -1,5 +1,6 @@
 package com.movienotebook.api.entity;
 
+import com.movienotebook.api.entity.enums.ReportStatus;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

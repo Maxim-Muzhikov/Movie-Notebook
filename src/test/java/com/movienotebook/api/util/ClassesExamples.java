@@ -1,6 +1,8 @@
 package com.movienotebook.api.util;
 
 import com.movienotebook.api.entity.*;
+import com.movienotebook.api.entity.enums.ReportStatus;
+import com.movienotebook.api.entity.enums.Role;
 import lombok.experimental.UtilityClass;
 
 import java.math.BigDecimal;
