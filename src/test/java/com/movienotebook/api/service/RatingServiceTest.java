@@ -5,7 +5,6 @@ import com.movienotebook.api.dto.rating.RatingResponseDto;
 import com.movienotebook.api.entity.Movie;
 import com.movienotebook.api.entity.Rating;
 import com.movienotebook.api.entity.User;
-import com.movienotebook.api.mapper.RatingMapper;
 import com.movienotebook.api.repository.RatingRepository;
 import com.movienotebook.api.security.CustomUserDetails;
 import com.movienotebook.api.util.ClassesExamples;
@@ -41,17 +40,11 @@ class RatingServiceTest {
 	@Mock
 	private UserService userService;
 	
-	@Mock
-	private RatingMapper ratingMapper;
-	
 	@InjectMocks
 	private RatingService ratingService;
 	
 	@Captor
 	private ArgumentCaptor<Rating> ratingCaptor;
-	
-	@Captor
-	private ArgumentCaptor<Movie> movieCaptor;
 	
 	private CustomUserDetails currentUser;
 	private User existingUser;
@@ -69,9 +62,7 @@ class RatingServiceTest {
 		
 		existingUser = ClassesExamples.getExistingUser();
 		existingUser.setId(currentUser.getId());
-		
 		existingMovie = ClassesExamples.getExistingMovie();
-		
 		existingRating = ClassesExamples.getExistingRating();
 	}
 	
@@ -84,90 +75,65 @@ class RatingServiceTest {
 		void save_whenRatingDoesNotExist_shouldCreateNewRecalculateAverageAndReturnDto() {
 			// Arrange
 			Long movieId = existingMovie.getId();
-			var requestDto = new RatingRequestDto(8);
-			Double rawCalculatedAverage = 8.0;
-			BigDecimal newAverageRating = new BigDecimal("8.00");
-			RatingResponseDto expectedDto = new RatingResponseDto(newAverageRating);
+			var request = new RatingRequestDto(5);
 			
-			when(movieService.getEntityById(movieId)).thenReturn(existingMovie);
-			when(ratingRepository.findByMovieIdAndUserId(movieId, currentUser.getId()))
+			when(ratingRepository.findByMovieIdAndUserId(movieId, existingUser.getId()))
 					.thenReturn(Optional.empty());
-			when(userService.getReferenceById(currentUser.getId())).thenReturn(existingUser);
-			when(ratingRepository.calculateAverageScoreByMovieId(movieId)).thenReturn(rawCalculatedAverage);
-			when(ratingMapper.toDto(newAverageRating)).thenReturn(expectedDto);
+			
+			when(movieService.getReferenceById(movieId)).thenReturn(existingMovie);
+			when(userService.getReferenceById(existingUser.getId())).thenReturn(existingUser);
+			when(movieService.updateAndGetAverageRating(movieId)).thenReturn(BigDecimal.valueOf(4.5));
 			
 			// Expected
-			Rating expectedNewRating = new Rating();
-			expectedNewRating.setMovie(existingMovie);
-			expectedNewRating.setUser(existingUser);
-			expectedNewRating.setScore(8);
+			var expectedResponse = new RatingResponseDto(BigDecimal.valueOf(4.5));
 			
-			Movie expectedMovie = ClassesExamples.getExistingMovie();
-			expectedMovie.setId(movieId);
-			expectedMovie.setAverageRating(newAverageRating);
+			var expectedRatingToSave = new Rating();
+			expectedRatingToSave.setMovie(existingMovie);
+			expectedRatingToSave.setUser(existingUser);
+			expectedRatingToSave.setScore(5);
 			
 			// Act
-			RatingResponseDto actualDto = ratingService.save(movieId, requestDto, currentUser);
+			RatingResponseDto response = ratingService.save(movieId, request, currentUser);
 			
 			// Assert
-			assertThat(actualDto).isSameAs(expectedDto);
+			verify(ratingRepository).saveAndFlush(ratingCaptor.capture());
+			Rating ratingToSave = ratingCaptor.getValue();
 			
-			verify(ratingRepository).save(ratingCaptor.capture());
-			assertThat(ratingCaptor.getValue())
+			assertThat(response)
 					.usingRecursiveComparison()
-					.ignoringFields("id")
-					.isEqualTo(expectedNewRating);
+					.isEqualTo(expectedResponse);
 			
-			verify(movieService).save(movieCaptor.capture());
-			assertThat(movieCaptor.getValue())
-					.isSameAs(existingMovie) // Фильм мутировал оригинал
+			assertThat(ratingToSave)
 					.usingRecursiveComparison()
-					.isEqualTo(expectedMovie);
+					.isEqualTo(expectedRatingToSave);
 		}
 		
 		@Test
-		@DisplayName("Если оценка существует, должен обновить её, округлить средний рейтинг (HALF_UP) и вернуть DTO")
+		@DisplayName("Если оценка существует, должен обновить счет, сохранить и вернуть DTO")
 		void save_whenRatingAlreadyExists_shouldUpdateExistingRecalculateAverageAndReturnDto() {
 			// Arrange
 			Long movieId = existingMovie.getId();
-			var requestDto = new RatingRequestDto(9);
-			Double rawCalculatedAverage = 8.456;
-			BigDecimal newAverageRating = new BigDecimal("8.46");
-			RatingResponseDto expectedDto = new RatingResponseDto(newAverageRating);
+			var request = new RatingRequestDto(5);
+			existingRating.setScore(1);
 			
-			when(movieService.getEntityById(movieId)).thenReturn(existingMovie);
-			when(ratingRepository.findByMovieIdAndUserId(movieId, currentUser.getId()))
+			when(ratingRepository.findByMovieIdAndUserId(movieId, existingUser.getId()))
 					.thenReturn(Optional.of(existingRating));
-			when(ratingRepository.calculateAverageScoreByMovieId(movieId)).thenReturn(rawCalculatedAverage);
-			when(ratingMapper.toDto(newAverageRating)).thenReturn(expectedDto);
 			
-			// Expected
-			Rating expectedUpdatedRating = ClassesExamples.getExistingRating();
-			expectedUpdatedRating.setScore(9);
-			
-			Movie expectedMovie = ClassesExamples.getExistingMovie();
-			expectedMovie.setId(movieId);
-			expectedMovie.setAverageRating(newAverageRating);
+			when(movieService.updateAndGetAverageRating(movieId)).thenReturn(BigDecimal.valueOf(4.50));
 			
 			// Act
-			RatingResponseDto actualDto = ratingService.save(movieId, requestDto, currentUser);
+			RatingResponseDto response = ratingService.save(movieId, request, currentUser);
 			
 			// Assert
-			assertThat(actualDto).isSameAs(expectedDto);
+			verify(ratingRepository).saveAndFlush(ratingCaptor.capture());
+			Rating ratingToSave = ratingCaptor.getValue();
 			
+			verify(movieService, never()).getReferenceById(any());
 			verify(userService, never()).getReferenceById(any());
 			
-			verify(ratingRepository).save(ratingCaptor.capture());
-			assertThat(ratingCaptor.getValue())
-					.isSameAs(existingRating)
-					.usingRecursiveComparison()
-					.isEqualTo(expectedUpdatedRating);
-			
-			verify(movieService).save(movieCaptor.capture());
-			assertThat(movieCaptor.getValue())
-					.isSameAs(existingMovie)
-					.usingRecursiveComparison()
-					.isEqualTo(expectedMovie);
+			assertThat(ratingToSave.getScore()).isEqualTo(5);
+			assertThat(ratingToSave).isSameAs(existingRating);
+			assertThat(response.newAverageRating()).isEqualByComparingTo(BigDecimal.valueOf(4.50));
 		}
 	}
 }
