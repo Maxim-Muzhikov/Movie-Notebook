@@ -14,6 +14,7 @@ import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Service
@@ -25,6 +26,17 @@ public class MovieService {
 	private final MovieSyncService movieSyncService;
 	private final KinopoiskMovieMapper kinopoiskMovieMapper;
 	private final MovieMapper movieMapper;
+	
+	public Movie getReferenceById(Long movieId) {
+		return movieRepository.getReferenceById(movieId);
+	}
+	
+	@Transactional
+	public BigDecimal updateAndGetAverageRating(Long movieId) {
+		movieRepository.updateAverageRating(movieId);
+		return movieRepository.findAverageRatingById(movieId)
+				.orElseThrow(() -> new ResourceNotFoundException("Фильм " + movieId + " не найден"));
+	}
 	
 	public Page<MovieResponseDto> searchMovies(SearchMovieRequestDto request) {
 		if (!request.deepSearch()) {
