@@ -98,7 +98,7 @@ class ReportServiceTest {
 			ReportRequestDto request = new ReportRequestDto(testReview.getId(), newReason);
 			
 			when(reviewService.getEntityById(testReview.getId())).thenReturn(testReview);
-			when(reportRepository.findByReviewAndReporter(testReview.getId(), currentUser.getId()))
+			when(reportRepository.findByReviewIdAndReporterId(testReview.getId(), currentUser.getId()))
 					.thenReturn(Optional.of(testReport));
 			
 			// Act
@@ -119,7 +119,7 @@ class ReportServiceTest {
 			ReportRequestDto request = new ReportRequestDto(testReview.getId(), newReason);
 			
 			when(reviewService.getEntityById(testReview.getId())).thenReturn(testReview);
-			when(reportRepository.findByReviewAndReporter(testReview.getId(), currentUser.getId()))
+			when(reportRepository.findByReviewIdAndReporterId(testReview.getId(), currentUser.getId()))
 					.thenReturn(Optional.empty());
 			when(userService.getReferenceById(currentUser.getId())).thenReturn(testUser);
 			

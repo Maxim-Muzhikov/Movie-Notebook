@@ -33,7 +33,7 @@ public class ReportService {
 		
 		Review review = reviewService.getEntityById(request.reviewId());
 		
-		Optional<Report> existingReport = reportRepository.findByReviewAndReporter(request.reviewId(), currentUser.getId());
+		Optional<Report> existingReport = reportRepository.findByReviewIdAndReporterId(request.reviewId(), currentUser.getId());
 		
 		if (existingReport.isPresent()) {
 			existingReport.get().setReason(request.reason());
