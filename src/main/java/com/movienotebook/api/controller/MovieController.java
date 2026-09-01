@@ -93,7 +93,7 @@ public class MovieController {
 			@ApiResponse(responseCode = "404", description = "Фильм с указанным ID не найден")
 	})
 	@PostMapping("/{movieId}/reviews")
-	public ResponseEntity<ReviewResponseDto> reviewMovie(
+	public ResponseEntity<ReviewResponseDto> createReview(
 			@PathVariable Long movieId,
 			@Valid @RequestBody ReviewRequestDto request,
 			@AuthenticationPrincipal CustomUserDetails userDetails) {
