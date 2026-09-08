@@ -1,14 +1,14 @@
 package com.movienotebook.api;
 
-import org.junit.jupiter.api.Disabled;
+import com.movienotebook.api.integration.BaseIntegrationTest;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 
-@Disabled
-@SpringBootTest
-class ApiApplicationTests {
-
+@DisplayName("Проверка инициализации контекста Spring Boot")
+class ApiApplicationTests extends BaseIntegrationTest {
+	
 	@Test
+	@DisplayName("Контекст приложения должен успешно загружаться")
 	void contextLoads() {
 	}
 
