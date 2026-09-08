@@ -1,0 +1,32 @@
+app:
+  movies:
+    stale-threshold: 24H
+
+spring:
+  application:
+    name: api-test
+
+  cache:
+    type: caffeine
+    cache-names: kinopoiskMovies
+    caffeine:
+      spec: maximumSize=1000,expireAfterWrite=24h
+
+  data:
+    web:
+      pageable:
+        serialization-mode: via-dto
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+
+jwt:
+  secret: "TXlTdXBlclNlY3JldFRlc3RLZXlGb3JKd3RWYWxpZGF0aW9uV2hpY2hJc0xvbmdFbm91Z2g="
+  expiration: 86400000
+
+kinopoisk:
+  api:
+    token: "dummy-test-token"
+    url: "https://dummy-kinopoisk.tech"
